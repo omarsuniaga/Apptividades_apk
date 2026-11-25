@@ -42,7 +42,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -114,13 +113,9 @@ fun PdfPreviewDialog(
         isRendering = false
     }
 
-    DisposableEffect(renderedPages) {
-        onDispose {
-            renderedPages.forEach { bmp ->
-                if (!bmp.isRecycled) bmp.recycle()
-            }
-        }
-    }
+    // Bitmaps are intentionally NOT recycled manually: Compose/RenderThread may still draw a frame
+    // referencing them after disposal, and recycling them then crashes the app
+    // ("Canvas: trying to use a recycled bitmap"). The GC reclaims them once unreferenced.
 
     Dialog(
         onDismissRequest = onDismiss,

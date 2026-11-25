@@ -716,7 +716,7 @@ private fun ApptividadesSignedInShell(
                                         supplierName = supplierName,
                                         currency = currency,
                                         issuerFallback = userDisplayName ?: "Omar",
-                                    ).map { stmt ->
+                                    ).mapCatching { stmt ->
                                         Triple(
                                             stmt,
                                             AccountStatementPdfGenerator.generate(stmt, brandAssets),
@@ -743,7 +743,7 @@ private fun ApptividadesSignedInShell(
                                         supplierName = supplierName,
                                         currency = currency,
                                         issuerFallback = userDisplayName ?: "Omar",
-                                    ).map { stmt ->
+                                    ).mapCatching { stmt ->
                                         stmt to AccountStatementPdfGenerator.generate(stmt, brandAssets)
                                     }
                                 }
@@ -777,7 +777,7 @@ private fun ApptividadesSignedInShell(
                                         supplierName = supplierName,
                                         currency = currency,
                                         issuerFallback = userDisplayName ?: "Omar",
-                                    ).map { stmt ->
+                                    ).mapCatching { stmt ->
                                         AccountStatementPdfGenerator.generate(stmt, brandAssets)
                                     }
                                 }

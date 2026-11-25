@@ -261,7 +261,7 @@ class SessionDataStore(
     data class StoredGroqPrefs(
         val hasEncryptedUserKey: Boolean = false,
         val maskedKeyPreview: String? = null,
-        val selectedModel: GroqModelOption = GroqModelOption.LLAMA_3_3_70B,
+        val selectedModel: GroqModelOption = GroqModelOption.GPT_OSS_120B,
         val anonymizeClientNames: Boolean = false,
     )
 

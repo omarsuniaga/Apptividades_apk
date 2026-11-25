@@ -166,7 +166,8 @@ class GroqRepository(
             )
 
         val storedPrefs = sessionDataStore.observeGroqPrefs().first()
-        val modelId = storedPrefs.selectedModel.modelId
+        val selectedModel = storedPrefs.selectedModel
+        val modelId = selectedModel.modelId
 
         val messages = buildList {
             add(GroqMessageDto(role = "system", content = systemPrompt))
@@ -187,6 +188,7 @@ class GroqRepository(
             request = GroqChatRequestDto(
                 model = modelId,
                 messages = messages,
+                reasoningEffort = if (selectedModel.supportsReasoningEffort) "low" else null,
             ),
         )
     }
