@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +61,8 @@ import com.example.domain.model.GroqAiSettings
 import com.example.domain.model.GroqModelOption
 import com.example.ui.theme.ApptividadesThemeDefaults
 import com.example.ui.theme.SpaceGroteskFontFamily
+
+private const val GROQ_KEYS_URL = "https://console.groq.com/keys"
 
 @Composable
 fun GroqSettingsCard(
@@ -181,18 +184,32 @@ fun GroqSettingsCard(
                         )
                     }
                 }
-            } else if (groqAiSettings.hasFallbackApiKey) {
+            } else {
+                val uriHandler = LocalUriHandler.current
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = colors.accentSoft,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        text = stringResource(R.string.settings_groq_key_fallback_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.ink,
+                    Column(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    )
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_groq_byok_steps),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.ink,
+                        )
+                        TextButton(
+                            onClick = { runCatching { uriHandler.openUri(GROQ_KEYS_URL) } },
+                            modifier = Modifier.testTag("groq_get_key_button"),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_groq_get_key),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
                 }
             }
 

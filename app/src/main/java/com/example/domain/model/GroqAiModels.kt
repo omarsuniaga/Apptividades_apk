@@ -29,13 +29,12 @@ enum class GroqModelOption(
 
 data class GroqAiSettings(
     val hasUserApiKey: Boolean = false,
-    val hasFallbackApiKey: Boolean = false,
     val maskedKeyPreview: String? = null,
     val selectedModel: GroqModelOption = GroqModelOption.GPT_OSS_120B,
     val anonymizeClientNames: Boolean = false,
 ) {
     val isConfigured: Boolean
-        get() = hasUserApiKey || hasFallbackApiKey
+        get() = hasUserApiKey
 }
 
 enum class AiAnalysisPreset(
