@@ -5,38 +5,36 @@ enum class GroqModelOption(
     val displayName: String,
     val badge: String,
 ) {
-    LLAMA_3_3_70B(
-        modelId = "llama-3.3-70b-versatile",
-        displayName = "Llama 3.3 70B",
-        badge = "Recomendado · Análisis profundo",
-    ),
-    LLAMA_3_1_8B(
-        modelId = "llama-3.1-8b-instant",
-        displayName = "Llama 3.1 8B",
-        badge = "Ultra rápido · Consultas breves",
-    ),
     GPT_OSS_120B(
         modelId = "openai/gpt-oss-120b",
         displayName = "GPT-OSS 120B",
-        badge = "Razonamiento avanzado",
+        badge = "Recomendado · Análisis profundo",
+    ),
+    GPT_OSS_20B(
+        modelId = "openai/gpt-oss-20b",
+        displayName = "GPT-OSS 20B",
+        badge = "Ultra rápido · Consultas breves",
     );
+
+    /** gpt-oss models are reasoning models: they accept `reasoning_effort` and spend output tokens thinking. */
+    val supportsReasoningEffort: Boolean
+        get() = modelId.startsWith("openai/gpt-oss")
 
     companion object {
         fun fromId(raw: String?): GroqModelOption =
             entries.firstOrNull { it.modelId.equals(raw?.trim(), ignoreCase = true) }
-                ?: LLAMA_3_3_70B
+                ?: GPT_OSS_120B
     }
 }
 
 data class GroqAiSettings(
     val hasUserApiKey: Boolean = false,
-    val hasFallbackApiKey: Boolean = false,
     val maskedKeyPreview: String? = null,
-    val selectedModel: GroqModelOption = GroqModelOption.LLAMA_3_3_70B,
+    val selectedModel: GroqModelOption = GroqModelOption.GPT_OSS_120B,
     val anonymizeClientNames: Boolean = false,
 ) {
     val isConfigured: Boolean
-        get() = hasUserApiKey || hasFallbackApiKey
+        get() = hasUserApiKey
 }
 
 enum class AiAnalysisPreset(

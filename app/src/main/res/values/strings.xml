@@ -765,7 +765,8 @@
     <string name="settings_groq_key_label">API Key de Groq</string>
     <string name="settings_groq_key_hint">gsk_…</string>
     <string name="settings_groq_key_saved_hint">Clave guardada (cifrada en Keystore): %s</string>
-    <string name="settings_groq_key_fallback_hint">Usando clave configurada del proyecto. Puedes ingresar tu propia clave abajo.</string>
+    <string name="settings_groq_byok_steps">Las funciones de IA se activan con tu propia API Key de Groq (gratuita): 1) entra a console.groq.com/keys, 2) crea una API Key, 3) cópiala y pégala aquí abajo.</string>
+    <string name="settings_groq_get_key">Obtener mi API Key en Groq</string>
     <string name="settings_groq_save_key">Guardar clave</string>
     <string name="settings_groq_test_connection">Probar</string>
     <string name="settings_groq_remove_key">Quitar clave</string>

@@ -1,6 +1,5 @@
 package com.example.data.repository
 
-import com.example.BuildConfig
 import com.example.data.local.SessionDataStore
 import com.example.data.port.GroqAiPort
 import com.example.data.remote.GroqAgendaGigDto
@@ -57,7 +56,6 @@ class GroqRepository(
     private val apiService: GroqApiService,
     private val sessionDataStore: SessionDataStore,
     private val moshi: Moshi,
-    private val fallbackKeyProvider: () -> String = { BuildConfig.GROQ_API_KEY },
 ) : GroqAiPort {
 
     private val payloadAdapter = moshi.adapter(GroqAnalysisPayloadDto::class.java)
@@ -66,7 +64,6 @@ class GroqRepository(
         sessionDataStore.observeGroqPrefs().map { stored ->
             GroqAiSettings(
                 hasUserApiKey = stored.hasEncryptedUserKey,
-                hasFallbackApiKey = resolveValidFallbackKey() != null,
                 maskedKeyPreview = stored.maskedKeyPreview,
                 selectedModel = stored.selectedModel,
                 anonymizeClientNames = stored.anonymizeClientNames,
@@ -166,7 +163,8 @@ class GroqRepository(
             )
 
         val storedPrefs = sessionDataStore.observeGroqPrefs().first()
-        val modelId = storedPrefs.selectedModel.modelId
+        val selectedModel = storedPrefs.selectedModel
+        val modelId = selectedModel.modelId
 
         val messages = buildList {
             add(GroqMessageDto(role = "system", content = systemPrompt))
@@ -187,29 +185,18 @@ class GroqRepository(
             request = GroqChatRequestDto(
                 model = modelId,
                 messages = messages,
+                reasoningEffort = if (selectedModel.supportsReasoningEffort) "low" else null,
             ),
         )
     }
 
     fun serializePayloadToJson(payload: GroqAnalysisPayloadDto): String = payloadAdapter.toJson(payload)
 
-    private suspend fun resolveActiveKey(): String? {
-        val userKey = sessionDataStore.loadDecryptedGroqApiKey()
-        if (!userKey.isNullOrBlank()) return userKey
-        return resolveValidFallbackKey()
-    }
-
-    private fun resolveValidFallbackKey(): String? {
-        val candidate = fallbackKeyProvider().trim()
-        if (candidate.isEmpty() || candidate.equals(PLACEHOLDER_KEY, ignoreCase = true)) {
-            return null
-        }
-        return candidate
-    }
+    /** Bring-your-own-key: AI features only work with the API key the user pasted in Settings. */
+    private suspend fun resolveActiveKey(): String? =
+        sessionDataStore.loadDecryptedGroqApiKey()?.takeIf { it.isNotBlank() }
 
     companion object {
-        private const val PLACEHOLDER_KEY = "YOUR_GROQ_API_KEY"
-
         val JSON_ANALYST_SYSTEM_PROMPT: String = """
             Eres el Asesor Estratégico de Negocio y Logística de Apptividades, especializado en músicos y artistas independientes de eventos en vivo (bodas, hoteles, cócteles y eventos privados en República Dominicana).
 

@@ -24,7 +24,9 @@ data class GroqChatRequestDto(
     val model: String,
     val messages: List<GroqMessageDto>,
     val temperature: Double = 0.25,
-    @Json(name = "max_completion_tokens") val maxCompletionTokens: Int = 1100,
+    // Reasoning models count their hidden reasoning tokens here, so keep generous headroom.
+    @Json(name = "max_completion_tokens") val maxCompletionTokens: Int = 3000,
+    @Json(name = "reasoning_effort") val reasoningEffort: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
