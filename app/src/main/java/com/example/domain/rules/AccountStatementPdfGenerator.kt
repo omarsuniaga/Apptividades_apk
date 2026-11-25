@@ -32,13 +32,11 @@ object AccountStatementPdfGenerator {
     private const val FOOTER_LINE_Y = 804f
     private const val CONTENT_BOTTOM = 792f
 
-    // Table column layout (total = 523f)
+    // Table column layout: Fecha/Hora | Servicio/Ubicación | Importe (total = 523f)
     private const val COL_DATE_X = MARGIN_X
     private const val COL_DATE_W = 84f
     private const val COL_SERVICE_X = COL_DATE_X + COL_DATE_W
-    private const val COL_SERVICE_W = 235f
-    private const val COL_STATUS_X = COL_SERVICE_X + COL_SERVICE_W
-    private const val COL_STATUS_W = 114f
+    private const val COL_SERVICE_W = 349f
     private const val COL_AMOUNT_RIGHT_X = MARGIN_X + CONTENT_WIDTH
 
     private val COLOR_HEADER_BG = Color.parseColor("#15171C")
@@ -77,9 +75,6 @@ object AccountStatementPdfGenerator {
         val cellPrimary = textPaint(9f, COLOR_INK, Typeface.NORMAL)
         val cellPrimaryBold = textPaint(9f, COLOR_INK, Typeface.BOLD)
         val cellMuted = textPaint(8f, COLOR_TEXT_MUTED, Typeface.NORMAL)
-        val cellStatusOverdue = textPaint(8.3f, COLOR_DANGER_DARK_RED, Typeface.BOLD)
-        val cellStatusThisMonth = textPaint(8.3f, COLOR_AMBER_BROWN, Typeface.BOLD)
-        val cellStatusInTerm = textPaint(8.3f, COLOR_TEXT_SECONDARY, Typeface.NORMAL)
         val cellAmountRight = textPaint(9f, COLOR_INK, Typeface.BOLD, Paint.Align.RIGHT)
 
         val sectionHeading = textPaint(9.2f, COLOR_INK, Typeface.BOLD)
@@ -442,7 +437,6 @@ object AccountStatementPdfGenerator {
         val baseline = topY + 14.5f
         canvas.drawText("FECHA", COL_DATE_X + 4f, baseline, paints.tableHeader)
         canvas.drawText("SERVICIO", COL_SERVICE_X + 4f, baseline, paints.tableHeader)
-        canvas.drawText("ESTADO", COL_STATUS_X + 4f, baseline, paints.tableHeader)
         canvas.drawText("IMPORTE", COL_AMOUNT_RIGHT_X - 4f, baseline, paints.tableHeaderRight)
 
         paints.stroke.color = COLOR_LINE
@@ -483,14 +477,6 @@ object AccountStatementPdfGenerator {
             canvas.drawText(line, COL_SERVICE_X + 4f, sy, paints.cellMuted)
             sy += 10f
         }
-
-        // Status
-        val statusPaint = when (item.status) {
-            ReceivableStatus.VENCIDO -> paints.cellStatusOverdue
-            ReceivableStatus.ESTE_MES -> paints.cellStatusThisMonth
-            ReceivableStatus.PROXIMO_MES -> paints.cellStatusInTerm
-        }
-        canvas.drawText(item.statusLabel, COL_STATUS_X + 4f, textTop, statusPaint)
 
         // Amount
         canvas.drawText(
