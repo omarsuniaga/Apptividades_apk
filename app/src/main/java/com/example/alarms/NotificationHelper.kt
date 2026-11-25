@@ -24,6 +24,7 @@ object NotificationHelper {
     const val CHANNEL_RECEIVABLES = "apptividades_receivables"
     const val CHANNEL_SCORES = "apptividades_scores"
     const val CHANNEL_SUMMARY = "apptividades_summary"
+    const val CHANNEL_QUOTES = "apptividades_quotes"
 
     const val EXTRA_OPEN_TAB = "extra_open_tab"
     const val EXTRA_QUICK_MESSAGE_ACTIVITY_ID = "extra_quick_message_activity_id"
@@ -91,8 +92,18 @@ object NotificationHelper {
             description = context.getString(R.string.channel_summary_desc)
         }
 
+        val quotesChannel = NotificationChannel(
+            CHANNEL_QUOTES,
+            context.getString(R.string.channel_quotes_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = context.getString(R.string.channel_quotes_desc)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
+        }
+
         manager.createNotificationChannels(
             listOf(
+                quotesChannel,
                 departureChannel,
                 contingencyChannel,
                 receivablesChannel,
@@ -351,6 +362,48 @@ object NotificationHelper {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(8001, notification)
+        }
+    }
+
+    /** "Time to follow up on this quote" reminder. Client name is hidden on the lock screen. */
+    fun postQuoteFollowUpNotification(
+        context: Context,
+        quoteId: String,
+        clientName: String,
+        amountText: String,
+    ) {
+        if (!hasNotificationPermission(context)) return
+        ensureChannels(context)
+
+        val openFunnelIntent = openAppPendingIntent(
+            context = context,
+            requestCode = 8003,
+            openTabRoute = com.example.ROUTE_QUOTE_FUNNEL,
+        )
+        val body = context.getString(R.string.notif_quote_followup_body, clientName, amountText)
+        val publicNotification = NotificationCompat.Builder(context, CHANNEL_QUOTES)
+            .setSmallIcon(R.drawable.ic_notif_alarm)
+            .setContentTitle(context.getString(R.string.notif_quote_followup_title))
+            .setContentText(context.getString(R.string.notif_quote_followup_public_body))
+            .setAutoCancel(true)
+            .setContentIntent(openFunnelIntent)
+            .build()
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_QUOTES)
+            .setSmallIcon(R.drawable.ic_notif_alarm)
+            .setContentTitle(context.getString(R.string.notif_quote_followup_title))
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicNotification)
+            .setAutoCancel(true)
+            .setContentIntent(openFunnelIntent)
+            .build()
+
+        runCatching {
+            NotificationManagerCompat.from(context).notify(notificationId(quoteId, 8003), notification)
         }
     }
 

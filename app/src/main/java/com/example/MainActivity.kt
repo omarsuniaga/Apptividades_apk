@@ -105,6 +105,9 @@ import com.example.ui.theme.Ground
 import com.example.ui.theme.SurfaceWhite
 import com.example.ui.viewmodel.AuthUiState
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.viewmodel.QuoteFunnelViewModel
+import com.example.ui.screens.QuoteFunnelScreen
+import com.example.domain.rules.QuoteFunnelCalculator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,6 +129,7 @@ const val ROUTE_BANK_ACCOUNTS = "bank_accounts"
 const val ROUTE_LOGIN_HISTORY = "login_history"
 const val ROUTE_BRAND_PROFILE = "brand_profile"
 const val ROUTE_QUOTE_CREATOR = "quote_creator"
+const val ROUTE_QUOTE_FUNNEL = "quote_funnel"
 const val ROUTE_AI_ANALYTICS = "ai_analytics"
 
 private data class NotificationDeepLink(
@@ -182,6 +186,12 @@ class MainActivity : ComponentActivity() {
                     groqAiPort = appContainer.groqAiPort,
                 )
             )
+            val funnelVm: QuoteFunnelViewModel = viewModel(
+                factory = QuoteFunnelViewModel.Factory(
+                    port = appContainer.quoteFunnelPort,
+                    manager = appContainer.quoteFunnelManager,
+                )
+            )
             val dataStateForWindow by vm.dataState.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()
             val isDarkTheme = when (dataStateForWindow.privacyPreferences.themeMode) {
@@ -223,6 +233,7 @@ class MainActivity : ComponentActivity() {
                 val deepLink by _pendingDeepLink.asStateFlow().collectAsStateWithLifecycle()
                 ApptividadesRoot(
                     viewModel = vm,
+                    funnelViewModel = funnelVm,
                     pendingDeepLink = deepLink,
                     onConsumeDeepLink = { _pendingDeepLink.value = null },
                 )
@@ -266,6 +277,7 @@ private sealed interface FormOverlayState {
 @Composable
 private fun ApptividadesRoot(
     viewModel: MainViewModel,
+    funnelViewModel: QuoteFunnelViewModel,
     pendingDeepLink: NotificationDeepLink?,
     onConsumeDeepLink: () -> Unit,
 ) {
@@ -385,6 +397,7 @@ private fun ApptividadesRoot(
                 ApptividadesSignedInShell(
                     userEmail = auth.session.email,
                     viewModel = viewModel,
+                    funnelViewModel = funnelViewModel,
                     pendingDeepLink = pendingDeepLink,
                     onConsumeDeepLink = onConsumeDeepLink,
                     onToggleAppLock = { enable, onUnavailable ->
@@ -433,11 +446,13 @@ private fun ApptividadesRoot(
 private fun ApptividadesSignedInShell(
     userEmail: String,
     viewModel: MainViewModel,
+    funnelViewModel: QuoteFunnelViewModel,
     pendingDeepLink: NotificationDeepLink?,
     onConsumeDeepLink: () -> Unit,
     onToggleAppLock: (enable: Boolean, onUnavailable: (String) -> Unit) -> Unit,
 ) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
+    val savedQuotes by funnelViewModel.quotes.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: ROUTE_INICIO
@@ -613,6 +628,8 @@ private fun ApptividadesSignedInShell(
             val targetTab = MainTab.entries.firstOrNull { it.route == link.openTab }
             if (targetTab != null) {
                 navigateToTab(targetTab)
+            } else if (link.openTab == ROUTE_QUOTE_FUNNEL) {
+                navController.navigate(ROUTE_QUOTE_FUNNEL)
             }
             onConsumeDeepLink()
             return@LaunchedEffect
@@ -682,6 +699,7 @@ private fun ApptividadesSignedInShell(
                         },
                         onSetContingencyUnderControl = viewModel::setContingencyUnderControl,
                         onOpenQuoteCreator = { navController.navigate(ROUTE_QUOTE_CREATOR) },
+                        onOpenQuoteFunnel = { navController.navigate(ROUTE_QUOTE_FUNNEL) },
                         onOpenAiAnalyst = { navController.navigate(ROUTE_AI_ANALYTICS) },
                         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                     )
@@ -892,6 +910,7 @@ private fun ApptividadesSignedInShell(
                                 if (res.isSuccess) {
                                     BrandAssetStorage.clearAllBrandAssets(context)
                                     PdfStatementSharer.cleanupAllCachedStatements(context)
+                                    funnelViewModel.deleteAll()
                                 }
                                 onResult(res)
                             }
@@ -917,6 +936,8 @@ private fun ApptividadesSignedInShell(
                 }
 
                 composable(ROUTE_QUOTE_CREATOR) {
+                    // Keeps the same funnel record (and quote number) while this creator session regenerates the PDF.
+                    var sessionQuoteId by remember { mutableStateOf<String?>(null) }
                     val frequentNames = remember(dataState.frequentSuppliers, dataState.suppliers) {
                         (dataState.frequentSuppliers.map { it.displayName } + dataState.suppliers.map { it.name })
                             .map { it.trim() }
@@ -934,12 +955,15 @@ private fun ApptividadesSignedInShell(
                         onBack = { navController.popBackStack() },
                         onDownloadQuote = { quote ->
                             coroutineScope.launch {
+                                val prepared = funnelViewModel.prepare(sessionQuoteId, quote, dataState.today)
+                                sessionQuoteId = prepared.id
                                 val brandAssets = loadPdfBrandAssets(context, dataState.brandProfile)
                                 val result = withContext(Dispatchers.Default) {
-                                    runCatching { QuotePdfGenerator.generate(quote, brandAssets) }
+                                    runCatching { QuotePdfGenerator.generate(prepared.quote, brandAssets) }
                                 }
                                 brandAssets.recycleSafely()
                                 result.onSuccess { pdf ->
+                                    funnelViewModel.save(prepared, dataState.today, markSent = false)
                                     pendingDownloadPdf = pdf
                                     pendingDownloadSuccessMsg = context.getString(R.string.quote_saved_ok)
                                     savePdfLauncher.launch(pdf.fileName)
@@ -952,14 +976,16 @@ private fun ApptividadesSignedInShell(
                         },
                         onShareQuote = { quote ->
                             coroutineScope.launch {
+                                val prepared = funnelViewModel.prepare(sessionQuoteId, quote, dataState.today)
+                                sessionQuoteId = prepared.id
                                 val brandAssets = loadPdfBrandAssets(context, dataState.brandProfile)
                                 val result = withContext(Dispatchers.Default) {
-                                    runCatching { QuotePdfGenerator.generate(quote, brandAssets) }
+                                    runCatching { QuotePdfGenerator.generate(prepared.quote, brandAssets) }
                                 }
                                 brandAssets.recycleSafely()
                                 result.onSuccess { pdf ->
-                                    val phone = viewModel.findSupplierPhone(quote.clientName)
-                                    val caption = QuoteCalculator.buildShareCaption(quote)
+                                    val phone = viewModel.findSupplierPhone(prepared.quote.clientName)
+                                    val caption = QuoteCalculator.buildShareCaption(prepared.quote)
                                     val shared = PdfStatementSharer.shareStatementPdf(
                                         context = context,
                                         pdf = pdf,
@@ -967,6 +993,49 @@ private fun ApptividadesSignedInShell(
                                         supplierRawPhone = phone,
                                     )
                                     if (shared.isFailure) {
+                                        snackbarHostState.showSnackbar(
+                                            shared.exceptionOrNull()?.message
+                                                ?: context.getString(R.string.quote_generate_error)
+                                        )
+                                    } else {
+                                        funnelViewModel.save(prepared, dataState.today, markSent = true)
+                                        snackbarHostState.showSnackbar(context.getString(R.string.funnel_saved_sent))
+                                    }
+                                }.onFailure { err ->
+                                    snackbarHostState.showSnackbar(
+                                        err.message ?: context.getString(R.string.quote_generate_error)
+                                    )
+                                }
+                            }
+                        },
+                    )
+                }
+
+                composable(ROUTE_QUOTE_FUNNEL) {
+                    QuoteFunnelScreen(
+                        quotes = savedQuotes,
+                        today = dataState.today,
+                        onBack = { navController.popBackStack() },
+                        onNewQuote = { navController.navigate(ROUTE_QUOTE_CREATOR) },
+                        onSendQuote = { saved ->
+                            coroutineScope.launch {
+                                val brandAssets = loadPdfBrandAssets(context, dataState.brandProfile)
+                                val quote = QuoteFunnelCalculator.quoteForPdf(saved, dataState.bankAccounts)
+                                val result = withContext(Dispatchers.Default) {
+                                    runCatching { QuotePdfGenerator.generate(quote, brandAssets) }
+                                }
+                                brandAssets.recycleSafely()
+                                result.onSuccess { pdf ->
+                                    val shared = PdfStatementSharer.shareStatementPdf(
+                                        context = context,
+                                        pdf = pdf,
+                                        caption = QuoteCalculator.buildShareCaption(quote),
+                                        supplierRawPhone = viewModel.findSupplierPhone(quote.clientName),
+                                    )
+                                    if (shared.isSuccess) {
+                                        funnelViewModel.markSent(saved.id, dataState.today)
+                                        snackbarHostState.showSnackbar(context.getString(R.string.funnel_saved_sent))
+                                    } else {
                                         snackbarHostState.showSnackbar(
                                             shared.exceptionOrNull()?.message
                                                 ?: context.getString(R.string.quote_generate_error)
@@ -979,6 +1048,30 @@ private fun ApptividadesSignedInShell(
                                 }
                             }
                         },
+                        onSetFollowUp = { saved, date -> funnelViewModel.scheduleFollowUp(saved.id, date) },
+                        onMarkWon = { saved ->
+                            funnelViewModel.markWon(saved.id)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(context.getString(R.string.funnel_marked_won))
+                            }
+                        },
+                        onMarkLost = { saved, reason -> funnelViewModel.markLost(saved.id, reason) },
+                        onReopen = { saved -> funnelViewModel.reopen(saved.id, dataState.today) },
+                        onCreateActivity = { saved ->
+                            QuoteFunnelCalculator.toActivityDraft(saved)?.let { draft ->
+                                viewModel.saveNewActivity(draft, 1, null, null, null) { res ->
+                                    res.onSuccess { funnelViewModel.markConverted(saved.id) }
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            res.exceptionOrNull()?.message
+                                                ?: context.getString(R.string.funnel_activity_ok)
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        onDelete = { saved -> funnelViewModel.delete(saved.id) },
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                     )
                 }
 
