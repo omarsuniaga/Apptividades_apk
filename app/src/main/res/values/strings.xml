@@ -1,0 +1,803 @@
+<resources>
+    <string name="app_name">Apptividades</string>
+
+    <!-- Navigation -->
+    <string name="nav_inicio">Inicio</string>
+    <string name="nav_agenda">Agenda</string>
+    <string name="nav_cobros">Cobros</string>
+    <string name="nav_balance">Balance</string>
+    <string name="nav_new_activity">Nueva actividad</string>
+    <string name="nav_reports">Reportes</string>
+    <string name="nav_suppliers">Proveedores</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="nav_back">Volver</string>
+    <string name="nav_close">Cerrar</string>
+
+    <!-- Auth -->
+    <string name="login_subtitle">Agenda, cobros y balance de toques</string>
+    <string name="login_email_label">Correo electrónico</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_submit">Iniciar sesión</string>
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_reset_title">Recuperar contraseña</string>
+    <string name="login_reset_message">El enlace se abre en el navegador; ahí eliges la nueva contraseña y regresas a la app.</string>
+    <string name="login_reset_send">Enviar enlace</string>
+    <string name="login_reset_sent">Si existe una cuenta, recibirás instrucciones. El enlace se abre en el navegador; ahí eliges la nueva contraseña y regresas a la app.</string>
+    <string name="login_resend_confirmation">Reenviar correo de confirmación</string>
+    <string name="login_resend_confirmation_cooldown">Reenviar correo de confirmación (%ds)</string>
+    <string name="login_missing_config_title">Falta configurar la clave de conexión</string>
+    <string name="login_missing_config_body">Agrega SUPABASE_PUBLISHABLE_KEY en el panel de Secrets de AI Studio para conectar con tu cuenta de Apptividades Lab.</string>
+    <string name="login_invalid_fields">Ingresa un correo y contraseña válidos.</string>
+    <string name="login_show_password">Mostrar contraseña</string>
+    <string name="login_hide_password">Ocultar contraseña</string>
+
+    <!-- Plurals -->
+    <plurals name="gig_count">
+        <item quantity="one">%d toque</item>
+        <item quantity="other">%d toques</item>
+    </plurals>
+    <plurals name="activity_count">
+        <item quantity="one">%d actividad</item>
+        <item quantity="other">%d actividades</item>
+    </plurals>
+    <plurals name="day_count">
+        <item quantity="one">%d día</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+    <plurals name="missing_gigs_estimate">
+        <item quantity="one">falta ≈ %d toque</item>
+        <item quantity="other">faltan ≈ %d toques</item>
+    </plurals>
+    <plurals name="mark_paid_action">
+        <item quantity="one">Marcar %1$d toque como pagado · %2$s</item>
+        <item quantity="other">Marcar %1$d toques como pagados · %2$s</item>
+    </plurals>
+    <plurals name="more_suppliers">
+        <item quantity="one">%d proveedor más</item>
+        <item quantity="other">%d proveedores más</item>
+    </plurals>
+    <plurals name="merged_spellings_note">
+        <item quantity="one">Se unificó %d variante escrita de distinta forma.</item>
+        <item quantity="other">Se unificaron %d variantes escritas de distinta forma.</item>
+    </plurals>
+
+    <!-- Inicio -->
+    <string name="inicio_greeting_named">Hola, %s</string>
+    <string name="inicio_greeting_default">Hola, Omar</string>
+    <string name="inicio_billed_suffix">· facturado</string>
+    <string name="inicio_goal_progress">%1$d%% de la meta · %2$s</string>
+    <string name="inicio_goal_reached">Meta alcanzada</string>
+    <string name="inicio_metric_played">Tocadas</string>
+    <string name="inicio_metric_upcoming">Por venir</string>
+    <string name="inicio_metric_collected">Cobrado</string>
+    <string name="inicio_overdue_title">%s vencidos</string>
+    <string name="inicio_overdue_cta">Ver cobros y enviar recordatorio</string>
+    <string name="inicio_upcoming_title">Próximas este mes</string>
+    <string name="inicio_see_agenda">Ver agenda</string>
+    <string name="inicio_empty_upcoming_title">Sin próximas actividades este mes</string>
+    <string name="inicio_empty_upcoming_body">No quedan toques pendientes en lo que resta del mes. Toca el botón + para registrar uno.</string>
+    <string name="inicio_notifications_cd">Alertas y resumen</string>
+
+    <!-- Agenda -->
+    <string name="agenda_prev_month">Mes anterior</string>
+    <string name="agenda_next_month">Mes siguiente</string>
+    <string name="agenda_legend_played_pending">Tocada · por cobrar</string>
+    <string name="agenda_legend_scheduled">Programada</string>
+    <string name="agenda_legend_paid">Pagada</string>
+    <string name="agenda_free_weekends">Fines de semana libres este mes</string>
+    <string name="agenda_no_free_weekends">No quedan fines de semana libres este mes.</string>
+    <string name="agenda_today_prefix">Hoy · %s</string>
+    <string name="agenda_empty_day">Sin toques programados este día.</string>
+    <string name="agenda_add_on_day">Registrar toque este día</string>
+    <string name="agenda_gap_between">%s entre toques</string>
+    <string name="status_por_cobrar">Por cobrar</string>
+    <string name="status_pagado">Pagado</string>
+    <string name="status_programada">Programada</string>
+    <string name="status_vencido">Vencido</string>
+    <string name="status_este_mes">En plazo</string>
+    <string name="status_proximo_mes">Próximo mes</string>
+
+    <!-- Nueva / Editar Actividad -->
+    <string name="form_new_title">Nueva actividad</string>
+    <string name="form_edit_title">Editar actividad</string>
+    <string name="form_supplier_label">Proveedor</string>
+    <string name="form_supplier_other">+ Otro</string>
+    <string name="form_supplier_custom_hint">Nombre del proveedor</string>
+    <string name="form_type_label">Tipo</string>
+    <string name="form_type_fijo">Actividad fija</string>
+    <string name="form_type_boda">Boda</string>
+    <string name="form_type_coctel">Cóctel</string>
+    <string name="form_type_privado">Privado</string>
+    <string name="form_date_label">Fecha</string>
+    <string name="form_time_label">Hora</string>
+    <string name="form_time_optional">Sin hora</string>
+    <string name="form_conflict_prefix">Choque de horario:</string>
+    <string name="form_venue_label">Lugar</string>
+    <string name="form_venue_hint">Hotel, salón o residencia</string>
+    <string name="form_venue_saved_hint">Lugar guardado · %s</string>
+    <string name="form_description_label">Descripción (opcional)</string>
+    <string name="form_description_hint">Ej. Ceremonia, recepción, repertorio…</string>
+    <string name="form_amount_label">Monto</string>
+    <string name="form_usual_rate_hint">Tarifa habitual de %1$s: %2$s</string>
+    <string name="form_already_paid">Ya me pagaron</string>
+    <string name="form_repeat_weekly">Repetir cada semana</string>
+    <string name="form_repeat_weeks_label">Cantidad de semanas</string>
+    <string name="form_series_scope_title">Esta actividad pertenece a una serie semanal</string>
+    <string name="form_series_only_this">Solo esta fecha</string>
+    <string name="form_series_all">Toda la serie</string>
+    <string name="form_save_button">Guardar actividad</string>
+    <string name="form_update_button">Guardar cambios</string>
+    <string name="form_delete_button">Eliminar actividad</string>
+    <string name="form_delete_confirm_title">¿Eliminar actividad?</string>
+    <string name="form_delete_confirm_body">Esta acción eliminará el toque de tu agenda y de Apptividades Lab.</string>
+    <string name="form_delete_series_confirm_body">¿Deseas eliminar solo esta fecha o toda la serie semanal?</string>
+    <string name="form_delete_only_this">Solo esta fecha</string>
+    <string name="form_delete_all_series">Toda la serie</string>
+    <string name="form_cancel">Cancelar</string>
+    <string name="form_confirm">Confirmar</string>
+    <string name="form_validation_venue">Indica el lugar del toque.</string>
+    <string name="form_validation_amount">Ingresa un monto válido mayor o igual a 0.</string>
+    <string name="error_schedule_conflict_db">Conflicto de horario: ya existe otro servicio en el intervalo reservado.</string>
+
+    <!-- Cobros -->
+    <string name="cobros_eyebrow">Por cobrar · toques ya tocados</string>
+    <string name="cobros_tile_overdue">Vencido</string>
+    <string name="cobros_tile_in_term">En plazo (mes vencido)</string>
+    <string name="cobros_section_overdue">Vencidos</string>
+    <string name="cobros_section_this_month">Se cobran en %s</string>
+    <string name="cobros_section_next_month">Se cobran en %s</string>
+    <string name="cobros_preview_pdf_cta">Ver resumen de actividades</string>
+    <string name="cobros_send_pdf_cta">Enviar resumen de actividades (PDF)</string>
+    <string name="cobros_send_pdf_cd">Enviar resumen de actividades en PDF de %s</string>
+    <string name="cobros_download_pdf_cd">Descargar resumen de actividades en PDF de %s</string>
+    <string name="cobros_no_bank_accounts_notice">Sin cuentas bancarias guardadas · </string>
+    <string name="cobros_no_bank_accounts_cta">Configurar en Ajustes</string>
+    <string name="cobros_pdf_saved_ok">Resumen de actividades PDF guardado.</string>
+    <string name="cobros_pdf_error">No se pudo generar el PDF del resumen de actividades.</string>
+    <string name="pdf_preview_title">Resumen de actividades</string>
+    <string name="pdf_preview_loading">Preparando vista previa del PDF…</string>
+    <string name="pdf_preview_page_label">Página %1$d de %2$d</string>
+    <string name="pdf_preview_page_cd">Página %1$d de %2$d del resumen de actividades</string>
+    <string name="pdf_preview_download">Descargar</string>
+    <string name="pdf_preview_send">Enviar PDF</string>
+    <string name="cobros_empty_title">¡Todo al día!</string>
+    <string name="cobros_empty_body">No tienes toques ya tocados pendientes de cobro.</string>
+    <string name="cobros_oldest_prefix">el más antiguo, %1$s (%2$s)</string>
+    <string name="cobros_select_group_cd">Seleccionar cobros de %s</string>
+
+    <!-- Balance -->
+    <string name="balance_title">Balance 12 meses</string>
+    <string name="balance_export_csv">CSV</string>
+    <string name="balance_kpi_avg_month">Promedio/mes</string>
+    <string name="balance_kpi_gigs_month">Toques/mes</string>
+    <string name="balance_kpi_per_gig">Por toque</string>
+    <string name="balance_chart_title">Facturado por mes</string>
+    <string name="balance_goal_line">línea = meta %s</string>
+    <string name="balance_edit_goal">Editar meta</string>
+    <string name="balance_goal_dialog_title">Meta mensual</string>
+    <string name="balance_goal_dialog_hint">Monto en %s</string>
+    <string name="balance_chart_summary">%1$d de 12 meses alcanzaron la meta. El mes más bajo fue %2$s.</string>
+    <string name="balance_chart_summary_simple">%1$d de 12 meses alcanzaron la meta.</string>
+    <string name="balance_dependency_title">¿De quién depende tu ingreso?</string>
+    <string name="balance_dependency_insight">Top %1$d proveedores generan el %2$d%%. Si %3$s se detiene, pierdes ≈ %4$s al mes.</string>
+    <string name="balance_venues_title">Dónde tocas más</string>
+    <string name="balance_empty_title">Aún sin historial en 12 meses</string>
+    <string name="balance_empty_body">Cuando registres tus primeros toques verás aquí tu evolución mensual y concentración de ingresos.</string>
+
+    <!-- Proveedores -->
+    <string name="suppliers_title">Proveedores</string>
+    <string name="suppliers_search_hint">Buscar proveedor…</string>
+    <string name="suppliers_empty_title">Sin proveedores registrados</string>
+    <string name="suppliers_empty_body">Los proveedores se crean automáticamente al registrar toques o puedes agregar uno aquí.</string>
+    <string name="suppliers_add">Nuevo proveedor</string>
+    <string name="suppliers_edit">Editar proveedor</string>
+    <string name="suppliers_name_label">Nombre</string>
+    <string name="suppliers_phone_label">Teléfono (WhatsApp)</string>
+    <string name="suppliers_email_label">Correo electrónico</string>
+    <string name="suppliers_notes_label">Notas</string>
+    <string name="suppliers_no_phone">Sin teléfono guardado</string>
+    <string name="suppliers_pick_contact_cta">Importar desde contactos (WhatsApp / Teléfono)</string>
+    <string name="suppliers_contact_imported_hint">Contacto seleccionado: %s</string>
+    <string name="suppliers_contact_use_name">Usar también este nombre</string>
+    <string name="suppliers_open_whatsapp_cd">Abrir chat de WhatsApp con %s</string>
+    <string name="suppliers_delete_title">¿Eliminar proveedor?</string>
+    <string name="suppliers_delete_body">Se eliminará %s de tu lista de proveedores.</string>
+
+    <!-- Ajustes -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_section_general">Preferencias de trabajo</string>
+    <string name="settings_currency_label">Moneda predeterminada</string>
+    <string name="settings_monthly_goal_label">Meta mensual</string>
+    <string name="settings_monthly_goal_note">Se guarda en este dispositivo y se sincronizará con tu cuenta cuando se active la columna en el servidor.</string>
+    <string name="settings_section_durations">Duraciones predeterminadas (minutos)</string>
+    <string name="settings_setup_minutes">Preparación y montaje (setup)</string>
+    <string name="settings_internal_transfer_in_minutes">Traslado interno de llegada (min)</string>
+    <string name="settings_pre_start_margin_minutes">Margen mínimo antes de empezar (min)</string>
+    <string name="settings_event_minutes">Duración del toque</string>
+    <string name="settings_teardown_minutes">Recogida y desmontaje (teardown)</string>
+    <string name="settings_internal_transfer_out_minutes">Traslado interno de salida (min)</string>
+    <string name="settings_save">Guardar ajustes</string>
+    <string name="settings_saved">Ajustes guardados.</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+
+    <!-- Reportes -->
+    <string name="reports_title">Reportes</string>
+    <string name="reports_month_summary">Resumen del mes</string>
+    <string name="reports_export_csv_full">Exportar historial del mes (CSV)</string>
+    <string name="reports_export_all_csv">Exportar últimos 12 meses (CSV)</string>
+    <string name="reports_pdf_phase_note">Los resúmenes de actividades en PDF por proveedor se generan desde la pestaña Cobros usando tus cuentas bancarias en Ajustes.</string>
+
+    <!-- Common -->
+    <string name="action_retry">Reintentar</string>
+    <string name="action_refresh">Actualizar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="loading_data">Cargando tus datos…</string>
+    <string name="error_generic">Ocurrió un error al conectar con Apptividades Lab.</string>
+    <string name="error_server_pending">Función pendiente de activar en el servidor.</string>
+    <string name="error_session_expired">Tu sesión expiró. Inicia sesión nuevamente.</string>
+    <string name="no_supplier_label">Sin proveedor</string>
+
+    <!-- Phase 2: Alarms, Departure & Map Picker -->
+    <string name="channel_departure_name">Salidas y preparación</string>
+    <string name="channel_departure_desc">Alarmas para empezar a prepararte y salir a tiempo hacia cada toque.</string>
+    <string name="channel_receivables_name">Cobros</string>
+    <string name="channel_receivables_desc">Recordatorios de pagos pendientes y vencidos.</string>
+    <string name="channel_scores_name">Partituras</string>
+    <string name="channel_scores_desc">Avisos de canciones y partituras por estudiar.</string>
+    <string name="channel_summary_name">Resumen</string>
+    <string name="channel_summary_desc">Resumen diario a las 8:00 a. m. con tus toques del día.</string>
+
+    <string name="departure_leave_at">Sal a las %s</string>
+    <string name="departure_prepare_at">Prepárate a las %s</string>
+    <string name="departure_leave_and_prepare">Prepárate %1$s · Sal %2$s</string>
+    <string name="departure_estimated_travel">%d min · tiempo estimado (sin tráfico)</string>
+    <string name="departure_osrm_distance_time">%1$s km · %2$d min · tiempo estimado (sin tráfico)</string>
+    <string name="departure_osrm_time_only">%d min · tiempo estimado (sin tráfico)</string>
+
+    <string name="notif_prepare_title">Empieza a prepararte</string>
+    <string name="notif_prepare_body">%1$s a las %2$s · Sal a las %3$s</string>
+    <string name="notif_leave_title">Sal ahora hacia %s</string>
+    <string name="notif_leave_body">Tiempo estimado (sin tráfico): %1$d min · Llegarás a las %2$s</string>
+    <string name="notif_leave_body_no_travel">Sal ahora según tu línea de tiempo · Inicio a las %s</string>
+    <string name="notif_late_title">Vas tarde hacia %s</string>
+    <string name="notif_late_body">Vas tarde: sal ya, llegarás a las %s</string>
+    <string name="notif_test_title">Prueba de aviso · Apptividades</string>
+    <string name="notif_test_body">Si ves y escuchas esta notificación, los avisos de salida están funcionando correctamente en tu teléfono.</string>
+    <string name="notif_action_navigate">Navegar</string>
+    <string name="notif_daily_title">Tu día en Apptividades</string>
+    <string name="notif_daily_monday_overdue">Vencidos por cobrar: %s.</string>
+
+    <string name="form_pick_on_map">Elegir en el mapa</string>
+    <string name="form_venue_coords_saved">Coordenadas guardadas · alarmas de salida activas</string>
+    <string name="form_venue_address_label">Dirección (opcional o manual)</string>
+    <string name="form_venue_address_hint">Ej. Blvd. Turístico del Este, Bávaro</string>
+    <string name="form_route_calculating">Calculando distancia y tiempo estimado (sin tráfico)…</string>
+    <string name="map_picker_title">Elegir lugar en el mapa</string>
+    <string name="map_picker_search_hint">Buscar hotel o lugar (mín. 3 letras)…</string>
+    <string name="map_picker_min_chars_hint">Escribe al menos 3 letras para buscar hoteles en OpenStreetMap.</string>
+    <string name="map_picker_saved_venues">Lugares guardados</string>
+    <string name="map_picker_search_results">Resultados en Punta Cana / Bávaro / Cap Cana</string>
+    <string name="map_picker_confirm">Usar este lugar</string>
+    <string name="map_picker_tap_hint">Toca en el mapa para ajustar el punto exacto del hotel.</string>
+    <string name="map_picker_osm_attribution">© OpenStreetMap contributors</string>
+    <string name="map_picker_search_fallback_notice">No se pudo consultar la búsqueda de hoteles. Puedes tocar el mapa o escribir la dirección a mano.</string>
+    <string name="map_picker_manual_address_label">Dirección manual (opcional)</string>
+    <string name="map_picker_manual_address_hint">Escribe la dirección si prefieres o sin conexión</string>
+    <string name="map_picker_no_pin_selected">Sin pin en mapa · toca el mapa o escribe la dirección</string>
+    <string name="form_venue_clear_pin">Quitar pin</string>
+    <string name="map_picker_map_unavailable">Mapa sin conexión. Puedes escribir el nombre y la dirección a mano abajo.</string>
+    <string name="map_picker_server_pending">La tabla de lugares guardados aún no está activa en el servidor; las coordenadas se guardarán directamente en la actividad.</string>
+
+    <string name="settings_section_departures">Salidas y alarmas</string>
+    <string name="settings_prep_minutes">Preparación personal antes de salir (min)</string>
+    <string name="settings_travel_buffer_minutes">Margen de seguridad en viaje (min)</string>
+    <string name="settings_home_location_label">Ubicación de casa (origen de respaldo)</string>
+    <string name="settings_home_not_set">No configurada (se usa centro de Bávaro / Punta Cana)</string>
+    <string name="settings_home_set_current">Usar mi ubicación actual</string>
+    <string name="settings_home_pick_map">Elegir casa en el mapa</string>
+    <string name="settings_permissions_title">Permisos para alarmas y salidas</string>
+    <string name="settings_perm_notifications">Notificaciones</string>
+    <string name="settings_perm_location">Ubicación para calcular distancia</string>
+    <string name="settings_perm_exact_alarm">Alarmas exactas</string>
+    <string name="settings_perm_granted">Activo</string>
+    <string name="settings_perm_denied">Pendiente</string>
+    <string name="settings_perm_inexact_fallback">Denegado · usando alarmas aproximadas (WorkManager)</string>
+    <string name="settings_perm_enable">Activar</string>
+
+    <string name="perm_rationale_title">Activa los avisos de salida</string>
+    <string name="perm_rationale_notifications">Necesitamos enviar notificaciones para avisarte cuándo empezar a prepararte y cuándo salir hacia cada toque.</string>
+    <string name="perm_rationale_location">Tu ubicación se usa solo para calcular la distancia y el tiempo estimado (sin tráfico) hasta el hotel.</string>
+    <string name="perm_rationale_exact_alarm">Las alarmas exactas garantizan que el aviso «Sal ahora» suene en el minuto preciso incluso con la pantalla apagada.</string>
+
+    <string name="alerts_sheet_title">Alertas y salidas</string>
+    <string name="alerts_sheet_empty">No tienes toques próximos con hora programada para alarmas.</string>
+    <string name="alerts_sheet_refresh_routes">Recalcular rutas</string>
+    <string name="alerts_sheet_daily_active">Resumen diario activo a las 8:00 a. m.</string>
+    <string name="alerts_test_notification_cta">Probar aviso ahora</string>
+    <string name="alerts_test_notification_sent">Notificación de prueba enviada.</string>
+    <string name="alerts_test_notification_denied">Activa el permiso de notificaciones en Ajustes para recibir los avisos.</string>
+    <string name="departure_no_coords_note">Sin pin en mapa · alarma calculada según tu línea de tiempo</string>
+    <string name="action_open_google_maps">Abrir en Google Maps</string>
+    <string name="action_open_waze">Abrir en Waze</string>
+    <string name="notif_action_google_maps">Google Maps</string>
+    <string name="notif_action_waze">Waze</string>
+    <string name="nav_real_traffic_hint">Abre Google Maps o Waze para ver el tráfico real.</string>
+
+    <!-- Auth Sign Up & Session Login Tracker -->
+    <string name="auth_tab_login">Iniciar sesión</string>
+    <string name="auth_tab_signup">Crear cuenta</string>
+    <string name="signup_name_label">Nombre completo (opcional)</string>
+    <string name="signup_confirm_password_label">Confirmar contraseña</string>
+    <string name="signup_submit">Crear cuenta</string>
+    <string name="signup_rule_length">Al menos 8 caracteres</string>
+    <string name="signup_rule_letter">Al menos una letra</string>
+    <string name="signup_rule_upper">Una letra mayúscula</string>
+    <string name="signup_rule_lower">Una letra minúscula</string>
+    <string name="signup_rule_digit">Al menos un número</string>
+    <string name="signup_rule_match">Las contraseñas coinciden</string>
+    <string name="signup_email_confirm_sent">Te enviamos un correo. Ábrelo una sola vez, pulsa el enlace y vuelve aquí para iniciar sesión.</string>
+
+    <!-- Change Password (Settings) -->
+    <string name="settings_change_password_button">Cambiar contraseña</string>
+    <string name="settings_change_password_title">Cambiar contraseña</string>
+    <string name="settings_change_password_new_label">Nueva contraseña</string>
+    <string name="settings_change_password_confirm_label">Confirmar nueva contraseña</string>
+    <string name="settings_change_password_save">Actualizar contraseña</string>
+    <string name="settings_change_password_success">Contraseña actualizada correctamente.</string>
+
+    <string name="settings_login_history_title">Historial de inicios de sesión</string>
+    <string name="settings_login_history_subtitle">Monitorea fecha, hora, IP y dispositivo de tus accesos</string>
+    <string name="login_history_title">Inicios de sesión</string>
+    <string name="login_history_empty">Todavía no hay inicios de sesión registrados en este dispositivo.</string>
+    <string name="login_history_clear">Limpiar historial</string>
+    <string name="login_history_clear_confirm_title">¿Limpiar historial local?</string>
+    <string name="login_history_clear_confirm_body">Se borrarán los registros de inicios de sesión guardados en este dispositivo.</string>
+    <string name="login_history_event_login">Inicio de sesión</string>
+    <string name="login_history_event_signup">Registro de cuenta</string>
+    <string name="login_history_event_restored">Sesión restaurada</string>
+    <string name="login_history_status_success">Exitoso</string>
+    <string name="login_history_status_failed">Fallido</string>
+
+    <!-- Exact Alarm Red Warning & Battery Optimization -->
+    <string name="settings_exact_alarm_red_title">Falta el permiso de alarmas exactas</string>
+    <string name="settings_exact_alarm_red_body">Sin este permiso, Android depende solo de WorkManager y en modo ahorro (Doze) el aviso «Sal ahora» puede retrasarse entre 10 y 30 minutos.</string>
+    <string name="settings_exact_alarm_open_system">Abrir permiso de alarmas exactas</string>
+    <string name="settings_notif_red_title">Notificaciones desactivadas (Android 13+)</string>
+    <string name="settings_notif_red_body">Activa el permiso de notificaciones para que los avisos «Sal ahora» y «Prepárate» se muestren en primer plano.</string>
+    <string name="settings_battery_title">Optimización de batería</string>
+    <string name="settings_battery_body">En teléfonos Xiaomi, Samsung y Huawei, el ahorro de batería puede cerrar procesos en segundo plano y retrasar avisos. Recomendamos configurar Apptividades sin restricciones de batería.</string>
+    <string name="settings_battery_open">Ajustes de batería</string>
+    <string name="settings_battery_ok">Sin restricciones</string>
+    <string name="settings_battery_restricted">Optimizada</string>
+    <string name="settings_travel_buffer_peak_hint">OSRM estima sin tráfico real: este margen es lo que te protege en horas pico.</string>
+
+    <!-- Phase 3: Bank Accounts -->
+    <string name="settings_bank_accounts_title">Cuentas bancarias</string>
+    <string name="settings_bank_accounts_subtitle">Datos de pago para tus resúmenes de actividades en PDF</string>
+    <string name="bank_accounts_title">Cuentas bancarias</string>
+    <string name="bank_accounts_add">Agregar cuenta</string>
+    <string name="bank_accounts_edit">Editar cuenta</string>
+    <string name="bank_accounts_empty_title">Sin cuentas bancarias</string>
+    <string name="bank_accounts_empty_body">Agrega tus cuentas en RD$ o US$ para incluirlas automáticamente en los resúmenes de actividades en PDF.</string>
+    <string name="bank_account_label">Etiqueta (obligatoria)</string>
+    <string name="bank_account_label_hint">Ej. Popular DOP, BHD USD</string>
+    <string name="bank_account_bank">Banco</string>
+    <string name="bank_account_holder">Titular</string>
+    <string name="bank_account_number">Número de cuenta</string>
+    <string name="bank_account_type">Tipo de cuenta</string>
+    <string name="bank_account_type_none">Sin especificar</string>
+    <string name="bank_account_currency">Moneda</string>
+    <string name="bank_account_default_switch">Usar como cuenta principal para esta moneda</string>
+    <string name="bank_account_badge_default">Principal</string>
+    <string name="bank_account_make_default">Hacer principal</string>
+    <string name="bank_account_delete_title">¿Eliminar cuenta bancaria?</string>
+    <string name="bank_account_delete_body">Se eliminará %s de tus datos de pago.</string>
+
+    <!-- Artist Event Timeline -->
+    <string name="timeline_section_title">Línea de tiempo del evento</string>
+    <string name="timeline_custom_badge">Tiempos personalizados</string>
+    <string name="timeline_adjust_cta">Ajustar tiempos</string>
+    <string name="timeline_no_time_hint">Selecciona una hora para ver tu línea de tiempo completa desde la preparación hasta que te desocupas.</string>
+    <string name="timeline_no_travel_hint">Agrega el lugar en el mapa o ingresa minutos de recorrido en «Ajustar tiempos» para incluir el viaje.</string>
+    <string name="timeline_strip_prepare">Prepárate</string>
+    <string name="timeline_strip_leave">Salida</string>
+    <string name="timeline_strip_free">Libre</string>
+    <string name="timeline_strip_total">Total</string>
+    <string name="timeline_step_prepare">Empiezas a prepararte</string>
+    <string name="timeline_step_leave">Hora de salida</string>
+    <string name="timeline_step_leave_sub">Momento recomendado para salir hacia el evento</string>
+    <string name="timeline_step_travel">Recorrido aproximado</string>
+    <string name="timeline_step_internal_in">Traslado interno (llegada)</string>
+    <string name="timeline_step_setup">Preparación y montaje</string>
+    <string name="timeline_step_pre_margin">Margen mínimo antes de empezar</string>
+    <string name="timeline_step_event">Presentación / evento</string>
+    <string name="timeline_step_teardown">Recogida y desmontaje</string>
+    <string name="timeline_step_internal_out">Traslado interno (salida)</string>
+    <string name="timeline_step_free">Te desocupas</string>
+    <string name="timeline_step_free_sub">Actividad completada y salida del lugar</string>
+    <string name="timeline_adjust_title">Ajustar tiempos del evento</string>
+    <string name="timeline_field_prep">Preparación personal antes de salir</string>
+    <string name="timeline_field_travel">Recorrido aproximado (vacío = usar ruta del mapa)</string>
+    <string name="timeline_field_travel_buffer">Margen de seguridad en viaje</string>
+    <string name="timeline_field_internal_in">Traslado interno (llegada al salón)</string>
+    <string name="timeline_field_setup">Preparación y montaje</string>
+    <string name="timeline_field_pre_margin">Margen mínimo antes de empezar</string>
+    <string name="timeline_field_event">Duración del evento</string>
+    <string name="timeline_field_teardown">Tiempo de recogida y desmontaje</string>
+    <string name="timeline_field_internal_out">Traslado interno (salida del lugar)</string>
+    <string name="timeline_apply_activity">Aplicar aquí</string>
+    <string name="timeline_save_as_defaults">Guardar como predeterminados</string>
+    <string name="timeline_reset_defaults">Restaurar tiempos predeterminados</string>
+
+    <!-- PDF Content Editor -->
+    <string name="pdf_preview_edit">Editar</string>
+    <string name="pdf_preview_edited_badge">Editado</string>
+    <string name="pdf_editor_title">Editar contenido del PDF</string>
+    <string name="pdf_editor_note">Los cambios solo aplican a este documento PDF y no modifican tus registros guardados.</string>
+    <string name="pdf_editor_reset">Restaurar</string>
+    <string name="pdf_editor_apply">Aplicar y ver PDF</string>
+    <string name="pdf_editor_section_header">Encabezado del documento</string>
+    <string name="pdf_editor_doc_title">Título del documento</string>
+    <string name="pdf_editor_issuer">Emitido por</string>
+    <string name="pdf_editor_supplier">Para (proveedor / cliente)</string>
+    <string name="pdf_editor_issue_date">Fecha de emisión</string>
+    <string name="pdf_editor_section_items">Servicios y montos</string>
+    <string name="pdf_editor_item_date">Fecha</string>
+    <string name="pdf_editor_item_service">Descripción del servicio</string>
+    <string name="pdf_editor_item_venue">Lugar / Hotel</string>
+    <string name="pdf_editor_item_status">Etiqueta de estado</string>
+    <string name="pdf_editor_item_amount">Monto (permite negativos para abonos o descuentos)</string>
+    <string name="pdf_editor_item_remove_cd">Eliminar línea</string>
+    <string name="pdf_editor_add_item">Agregar línea o ajuste</string>
+    <string name="pdf_editor_section_banks">Cuentas bancarias incluidas</string>
+    <string name="pdf_editor_no_banks">No tienes cuentas bancarias guardadas en Ajustes.</string>
+    <string name="pdf_editor_section_texts">Textos de cierre y WhatsApp</string>
+    <string name="pdf_editor_friendly_notice">Aviso de pagos (dejar vacío para omitir)</string>
+    <string name="pdf_editor_quote">Frase de cierre (dejar vacío para omitir)</string>
+    <string name="pdf_editor_quote_attr">Autor / atribución de la frase</string>
+    <string name="pdf_editor_gratitude">Mensaje de agradecimiento (dejar vacío para omitir)</string>
+    <string name="pdf_editor_whatsapp_caption">Mensaje al compartir por WhatsApp</string>
+    <string name="pdf_editor_error_empty_items">El documento debe incluir al menos una línea.</string>
+    <string name="pdf_editor_error_invalid_amount">Revisa los montos ingresados (usa números válidos, ej. 15000 o -500).</string>
+
+    <!-- Supplier Quick Messaging (Arrival / Finished / Open Situation) -->
+    <string name="supplier_msg_action_cta">Avisar al proveedor</string>
+    <string name="supplier_msg_form_cta">Avisar al proveedor (Llegada / Fin)</string>
+    <string name="supplier_msg_sheet_title">Mensaje rápido al proveedor</string>
+    <string name="supplier_msg_preset_arrived">Ya llegué al sitio</string>
+    <string name="supplier_msg_preset_delay">Voy retrasado</string>
+    <string name="supplier_msg_preset_finished">Terminé la actuación</string>
+    <string name="supplier_msg_preset_custom">Otra situación</string>
+    <string name="supplier_msg_snippets_label">Agregar situación rápida (opcional)</string>
+    <string name="supplier_msg_input_label">Mensaje (puedes editarlo libremente)</string>
+    <string name="supplier_msg_input_hint">Escribe o agrega cualquier situación, horario, acceso o detalle…</string>
+    <string name="supplier_msg_phone_saved">WhatsApp: %s</string>
+    <string name="supplier_msg_no_phone">Sin teléfono guardado · podrás elegir el contacto en WhatsApp</string>
+    <string name="supplier_msg_send_whatsapp">Enviar por WhatsApp</string>
+    <string name="supplier_msg_share_other">Compartir</string>
+    <string name="supplier_msg_copy">Copiar</string>
+    <string name="supplier_msg_copied">Mensaje copiado al portapapeles.</string>
+    <string name="supplier_msg_open_error">No se pudo abrir WhatsApp ni compartir el mensaje.</string>
+
+    <!-- Event Duration Selector (Activity Form) -->
+    <string name="form_duration_label">Duración del evento</string>
+    <string name="form_duration_other">Otro</string>
+    <string name="form_duration_custom_hint">Minutos (ej. 75)</string>
+    <string name="form_duration_default_hint">Predeterminado en Ajustes: %d min</string>
+    <string name="form_duration_chip_min">%d min</string>
+
+    <!-- Independent Channels (Receivables & Scores) & Modo Contingencia -->
+    <string name="channel_contingency_name">Modo Contingencia</string>
+    <string name="channel_contingency_desc">Alertas críticas antes del toque si aún no has llegado ni confirmaste que tienes todo bajo control.</string>
+    <string name="notif_contingency_title">Modo Contingencia · %s</string>
+    <string name="notif_contingency_title_final">Último aviso · %s</string>
+    <string name="notif_contingency_body_distance">Faltan %1$d min (%2$s) y sigues a %3$s del lugar. Avisa al proveedor o marca «Todo bajo control».</string>
+    <string name="notif_contingency_body_no_distance">Faltan %1$d min (%2$s) y aún no confirmas llegada. Avisa al proveedor o marca «Todo bajo control».</string>
+    <string name="notif_contingency_action_notify_supplier">Avisar al proveedor</string>
+    <string name="notif_contingency_action_under_control">Todo bajo control</string>
+
+    <string name="notif_receivables_title">Cobros vencidos pendientes</string>
+    <string name="notif_receivables_body">Tienes %s en cobros vencidos. Toca para revisar y enviar recordatorio.</string>
+    <string name="notif_receivables_public_body">Tienes cobros pendientes por revisar. Desbloquea para ver el detalle.</string>
+    <string name="notif_receivables_action_open">Ver cobros</string>
+    <string name="notif_scores_title">Prepara tus partituras</string>
+    <string name="notif_scores_body_header">En %1$d días (%2$s):</string>
+    <string name="notif_scores_body_header_tomorrow">Mañana (%s):</string>
+    <string name="notif_scores_action_agenda">Ver agenda</string>
+
+    <!-- In-App Modo Contingencia UI -->
+    <string name="contingency_banner_badge">MODO CONTINGENCIA</string>
+    <string name="contingency_banner_title">Faltan %1$d min para %2$s</string>
+    <string name="contingency_banner_body">El toque inicia a las %s y aún no confirmas llegada. Avisa al proveedor si vas con retraso o confirma que tienes todo bajo control.</string>
+    <string name="contingency_cta_notify_supplier">Avisar retraso</string>
+    <string name="contingency_cta_under_control">Todo bajo control</string>
+    <string name="contingency_status_under_control">Bajo control · Contingencia silenciada</string>
+    <string name="contingency_cta_mark_under_control">Todo bajo control</string>
+    <string name="contingency_cta_reactivate">Reactivar</string>
+
+    <!-- Settings: Reminders & Modo Contingencia -->
+    <string name="settings_section_reminders_contingency">Recordatorios y Modo Contingencia</string>
+    <string name="settings_contingency_toggle">Activar Modo Contingencia</string>
+    <string name="settings_contingency_desc">Si estás cerca de la hora de inicio y no has llegado ni confirmaste «Todo bajo control», dispara una alerta para avisar al proveedor.</string>
+    <string name="settings_contingency_lead_label">Avisar cuántos minutos antes del inicio</string>
+    <string name="settings_score_reminder_label">Recordatorio de partituras / repertorio</string>
+    <string name="settings_score_reminder_off">No</string>
+    <string name="settings_score_reminder_days_chip">%dd antes</string>
+    <string name="settings_receivables_monday_note">Cobros vencidos: aviso independiente cada lunes a las 8:00 a. m.</string>
+    <string name="alerts_battery_warning_title">Optimización de batería activa</string>
+    <string name="alerts_battery_warning_body">En Xiaomi, Samsung o Huawei el ahorro de batería puede retrasar avisos en reposo.</string>
+
+    <!-- Privacy & Financial Masking -->
+    <string name="bank_account_reveal_cd">Mostrar número de cuenta completo</string>
+    <string name="bank_account_hide_cd">Ocultar número de cuenta</string>
+    <string name="bank_account_mask_hint">Número protegido · toca el ojo para revelar</string>
+    <string name="settings_section_privacy">Privacidad en pantalla y accesos</string>
+    <string name="settings_screen_privacy_title">Bloquear capturas y vista previa</string>
+    <string name="settings_screen_privacy_desc">Oculta tus cifras y cuentas bancarias en el selector de apps recientes e impide capturas de pantalla.</string>
+    <string name="settings_external_ip_title">Registrar IP pública en historial</string>
+    <string name="settings_external_ip_desc">Consulta tu dirección IP externa al iniciar sesión. Desactivado por defecto para no contactar servicios externos.</string>
+    <string name="settings_app_lock_title">Bloqueo con huella, rostro o PIN</string>
+    <string name="settings_app_lock_desc">Pide la seguridad de tu teléfono al abrir la app o tras más de 30 s en segundo plano.</string>
+    <string name="settings_app_lock_unavailable">Configura primero huella, rostro o PIN en los ajustes de tu teléfono.</string>
+    <string name="settings_keystore_active_note">Sesión protegida con cifrado local en Android Keystore (AES-GCM).</string>
+    <string name="app_lock_title">Apptividades bloqueada</string>
+    <string name="app_lock_subtitle">Verifica tu identidad para acceder a tu agenda, cobros y cuentas.</string>
+    <string name="app_lock_prompt_title">Desbloquear Apptividades</string>
+    <string name="app_lock_prompt_subtitle">Usa tu huella, rostro o PIN del teléfono</string>
+    <string name="app_lock_enable_prompt_title">Activar bloqueo de la app</string>
+    <string name="app_lock_enable_prompt_subtitle">Confirma tu huella, rostro o PIN para activar esta protección</string>
+    <string name="app_lock_unlock_cta">Desbloquear</string>
+
+    <!-- Appearance & Backstage Dark Mode -->
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_appearance_desc">Elige entre Marfil editorial de día o Modo Oscuro Backstage para salones y escenarios de noche.</string>
+    <string name="settings_theme_system">Auto</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Backstage</string>
+
+    <!-- Editorial Studio: Quick Menu, Live Stage Card & Settings Categories -->
+    <string name="inicio_quick_menu_cd">Más opciones</string>
+    <string name="live_stage_eyebrow">EN VIVO HOY</string>
+    <string name="live_stage_phase_upcoming">Próximo hoy</string>
+    <string name="live_stage_phase_preparing">Preparación</string>
+    <string name="live_stage_phase_transit">En camino</string>
+    <string name="live_stage_phase_setup">Montaje en sitio</string>
+    <string name="live_stage_phase_on_stage">En escenario</string>
+    <string name="live_stage_phase_wrapping">Recogida</string>
+    <string name="live_stage_phase_completed">Finalizado</string>
+    <string name="live_stage_step_prep">Prep</string>
+    <string name="live_stage_step_leave">Salida</string>
+    <string name="live_stage_step_setup">Montaje</string>
+    <string name="live_stage_step_show">Show</string>
+    <string name="live_stage_step_free">Libre</string>
+    <string name="live_stage_countdown_min">en %d min</string>
+    <string name="live_stage_countdown_hr_min">en %1$d h %2$d m</string>
+    <string name="live_stage_countdown_hr">en %d h</string>
+    <string name="live_stage_countdown_now">ahora</string>
+    <string name="live_stage_next_prepare">Empieza a prepararte a las %s</string>
+    <string name="live_stage_next_leave">Hora recomendada de salida: %s</string>
+    <string name="live_stage_next_arrive">Llegada estimada al lugar: %s</string>
+    <string name="live_stage_next_start">Inicio del toque a las %s</string>
+    <string name="live_stage_next_end">Fin estimado del toque a las %s</string>
+    <string name="live_stage_next_free">Te desocupas aproximadamente a las %s</string>
+    <string name="live_stage_done_note">Actividad terminada · puedes avisar al proveedor</string>
+    <string name="live_stage_cta_arrived">Avisar llegada</string>
+    <string name="live_stage_cta_finished">Avisar fin</string>
+    <string name="live_stage_cta_message">Avisar proveedor</string>
+
+    <string name="settings_tab_general">General</string>
+    <string name="settings_tab_timings">Tiempos</string>
+    <string name="settings_tab_alerts">Alertas</string>
+    <string name="settings_tab_security">Seguridad</string>
+
+    <!-- Paso 6: Partial Payments, Receipts & Expenses (Ganancia Neta Real) -->
+    <string name="finance_section_title">Anticipos, comprobantes y gastos</string>
+    <string name="finance_section_subtitle">Controla señas recibidas, fotos de recibos y costos del toque</string>
+    <string name="finance_metric_paid">Abonado</string>
+    <string name="finance_metric_pending">Pendiente</string>
+    <string name="finance_metric_settled">Saldado</string>
+    <string name="finance_metric_net">Ganancia neta</string>
+    <string name="finance_payments_heading">Abonos / señas</string>
+    <string name="finance_expenses_heading">Gastos del toque</string>
+    <string name="finance_add_payment_cta">Registrar abono / seña</string>
+    <string name="finance_add_expense_cta">Agregar gasto</string>
+    <string name="finance_payment_dialog_title">Registrar abono o seña</string>
+    <string name="finance_expense_dialog_title">Registrar gasto del toque</string>
+    <string name="finance_amount_label">Monto (%s)</string>
+    <string name="finance_note_payment_label">Nota (ej. Seña 50%%, transferencia)</string>
+    <string name="finance_note_expense_label">Detalle (ej. Peaje, bajista, parqueo)</string>
+    <string name="finance_quick_25">25%%</string>
+    <string name="finance_quick_50">50%%</string>
+    <string name="finance_quick_remaining">Saldo</string>
+    <string name="finance_category_label">Categoría</string>
+    <string name="expense_cat_transport">Transporte / Gasolina</string>
+    <string name="expense_cat_musicians">Músicos / Equipo</string>
+    <string name="expense_cat_sound">Sonido / Alquiler</string>
+    <string name="expense_cat_lodging_food">Comida / Hospedaje</string>
+    <string name="expense_cat_other">Otros</string>
+    <string name="finance_receipt_attach">Adjuntar comprobante (foto)</string>
+    <string name="finance_receipt_attached">Comprobante adjunto</string>
+    <string name="finance_receipt_view">Ver comprobante</string>
+    <string name="finance_receipt_remove_cd">Quitar comprobante</string>
+    <string name="finance_receipt_importing">Guardando imagen…</string>
+    <string name="finance_receipt_error">No se pudo guardar la imagen del comprobante.</string>
+    <string name="finance_receipt_preview_title">Comprobante</string>
+    <string name="finance_receipt_unavailable">No se encontró la imagen del comprobante en este dispositivo.</string>
+    <string name="finance_delete_entry_cd">Eliminar registro</string>
+    <string name="finance_auto_settled_hint">Este abono cubre el monto total y marcará el toque como pagado.</string>
+    <string name="cobros_partial_deposits_badge">Anticipos aplicados: %s</string>
+    <string name="agenda_status_partial">Abono · Pend. %s</string>
+    <string name="balance_net_profit_title">Ganancia neta real (12 meses)</string>
+    <string name="balance_net_margin_pill">Margen %d%%</string>
+    <string name="balance_net_gross_label">Facturado bruto</string>
+    <string name="balance_net_expenses_label">Gastos registrados</string>
+    <string name="balance_net_avg_month">Neto/mes</string>
+    <string name="balance_net_avg_gig">Neto/toque</string>
+    <string name="balance_net_expenses_dist_title">Distribución de gastos</string>
+    <string name="balance_net_expenses_empty_hint">Registra gastos de gasolina, músicos o sonido dentro de cada actividad para calcular tu margen real.</string>
+
+    <!-- Paso 7: Offline Room Cache, Historical Exchange Rate & Calendar Export -->
+    <string name="offline_banner_title">Modo sin conexión · caché local</string>
+    <string name="offline_banner_pending_title">Cambios pendientes de sincronizar</string>
+    <string name="offline_banner_synced_at">Última sync: %s</string>
+    <string name="offline_banner_pending_count">%d pendiente(s)</string>
+    <string name="offline_banner_sync_now">Sincronizar</string>
+    <string name="offline_banner_syncing">Sincronizando…</string>
+
+    <string name="form_exchange_rate_label">Tasa de cambio histórica (1 US$ = RD$)</string>
+    <string name="form_exchange_rate_hint">Ej. 60.00</string>
+    <string name="form_exchange_rate_equiv">Equivalente guardado: %s</string>
+    <string name="form_exchange_rate_default_hint">Predeterminada: RD$ %s</string>
+    <string name="settings_exchange_section_title">Monedas y tasa de cambio</string>
+    <string name="settings_exchange_rate_label">Tasa predeterminada (1 US$ = RD$)</string>
+    <string name="settings_exchange_unify_title">Unificar cifras US$ y RD$</string>
+    <string name="settings_exchange_unify_desc">Convierte toques en dólares a tu moneda principal en Inicio y Balance usando la tasa histórica de cada actividad.</string>
+
+    <string name="calendar_export_cta">Agregar al calendario</string>
+    <string name="calendar_export_cd">Exportar toque al calendario del teléfono</string>
+    <string name="calendar_export_error">No se encontró una app de calendario instalada.</string>
+
+    <!-- Paso 8: Widget, Personal Brand, PDF Quotes & Account Deletion -->
+    <string name="widget_label">Próximo toque</string>
+    <string name="widget_description">Muestra tu próximo toque y la hora recomendada de salida.</string>
+    <string name="widget_eyebrow_next">PRÓXIMO TOQUE</string>
+    <string name="widget_eyebrow_today">HOY EN VIVO</string>
+    <string name="widget_empty_title">Sin toques próximos</string>
+    <string name="widget_empty_body">Toca para abrir tu agenda en Apptividades.</string>
+    <string name="widget_signed_out_title">Inicia sesión</string>
+    <string name="widget_signed_out_body">Abre Apptividades para ver tus próximos toques.</string>
+
+    <string name="settings_brand_title">Marca personal (PDF y Cotizaciones)</string>
+    <string name="settings_brand_subtitle">Logo, subtítulo artístico, contacto y firma para tus PDFs</string>
+    <string name="settings_brand_configured_badge">Configurada</string>
+    <string name="brand_screen_title">Marca personal</string>
+    <string name="brand_section_identity">Identidad profesional</string>
+    <string name="brand_artist_name_label">Nombre artístico o comercial</string>
+    <string name="brand_artist_name_hint">Ej. Omar Sax · Música en Vivo</string>
+    <string name="brand_subtitle_label">Subtítulo / especialidad</string>
+    <string name="brand_subtitle_hint">Ej. Saxofonista · Bodas y Eventos Corporativos</string>
+    <string name="brand_contact_label">Línea de contacto en pie de página</string>
+    <string name="brand_contact_hint">Ej. @omarsax · +1 809-555-0100</string>
+    <string name="brand_section_logo">Logotipo (encabezado de PDFs)</string>
+    <string name="brand_logo_hint">Se muestra en un recuadro limpio en tus resúmenes y cotizaciones.</string>
+    <string name="brand_logo_pick">Elegir logo</string>
+    <string name="brand_logo_change">Cambiar logo</string>
+    <string name="brand_logo_remove">Quitar</string>
+    <string name="brand_logo_preview_cd">Vista previa del logotipo</string>
+    <string name="brand_section_signature">Firma digital (cierre de PDFs)</string>
+    <string name="brand_signature_hint">Dibuja tu firma con el dedo o sube una imagen limpia con fondo claro.</string>
+    <string name="brand_signature_draw">Dibujar firma</string>
+    <string name="brand_signature_upload">Subir imagen</string>
+    <string name="brand_signature_remove">Quitar</string>
+    <string name="brand_signature_preview_cd">Vista previa de la firma</string>
+    <string name="brand_signature_dialog_title">Dibuja tu firma</string>
+    <string name="brand_signature_dialog_hint">Firma dentro del recuadro con tu dedo.</string>
+    <string name="brand_signature_clear">Limpiar</string>
+    <string name="brand_signature_save">Guardar firma</string>
+    <string name="brand_save_cta">Guardar marca personal</string>
+    <string name="brand_import_error">No se pudo cargar la imagen seleccionada.</string>
+
+    <string name="nav_quotes">Cotización PDF</string>
+    <string name="reports_create_quote_title">Cotización profesional (PDF)</string>
+    <string name="reports_create_quote_subtitle">Arma presupuestos con logo, anticipo de reserva, cuentas bancarias y firma.</string>
+    <string name="reports_create_quote_cta">Crear cotización</string>
+    <string name="quote_screen_title">Nueva cotización PDF</string>
+    <string name="quote_section_client">Cliente y evento</string>
+    <string name="quote_client_label">Cliente / Proveedor</string>
+    <string name="quote_client_hint">Ej. Hotel Paradisus o María Pérez</string>
+    <string name="quote_event_title_label">Título del evento</string>
+    <string name="quote_event_title_hint">Ej. Boda en terraza · Ceremonia y cóctel</string>
+    <string name="quote_venue_label">Lugar / Hotel (opcional)</string>
+    <string name="quote_venue_hint">Ej. Dreams Macao Beach</string>
+    <string name="quote_event_date_label">Fecha del evento (opcional)</string>
+    <string name="quote_event_date_tbd">Por definir</string>
+    <string name="quote_event_time_label">Hora (opcional)</string>
+    <string name="quote_section_terms_config">Moneda, vigencia y anticipo</string>
+    <string name="quote_validity_label">Vigencia</string>
+    <string name="quote_validity_days">%d días</string>
+    <string name="quote_deposit_label">Anticipo para reservar fecha</string>
+    <string name="quote_deposit_none">Sin anticipo</string>
+    <string name="quote_section_items">Conceptos y tarifas</string>
+    <string name="quote_item_desc_label">Concepto</string>
+    <string name="quote_item_detail_label">Detalle (opcional)</string>
+    <string name="quote_item_qty_label">Cant.</string>
+    <string name="quote_item_price_label">Precio</string>
+    <string name="quote_add_item_cta">Agregar concepto</string>
+    <string name="quote_remove_item_cd">Eliminar concepto</string>
+    <string name="quote_quick_presets_label">Agregar rápido:</string>
+    <string name="quote_section_notes">Notas y condiciones</string>
+    <string name="quote_notes_label">Notas adicionales (opcional)</string>
+    <string name="quote_notes_hint">Ej. Incluye sonido compacto para hasta 80 invitados.</string>
+    <string name="quote_terms_label">Condiciones de reserva</string>
+    <string name="quote_include_banks_toggle">Incluir mis cuentas bancarias (%s)</string>
+    <string name="quote_total_label">Total cotizado</string>
+    <string name="quote_deposit_row_label">Anticipo (%d%%)</string>
+    <string name="quote_balance_row_label">Saldo restante</string>
+    <string name="quote_download_cta">Descargar PDF</string>
+    <string name="quote_share_cta">Enviar PDF</string>
+    <string name="quote_saved_ok">Cotización PDF guardada.</string>
+    <string name="quote_validation_client">Ingresa el nombre del cliente o proveedor.</string>
+    <string name="quote_validation_items">Agrega al menos un concepto con monto válido.</string>
+    <string name="quote_generate_error">No se pudo generar la cotización PDF.</string>
+
+    <string name="settings_widget_title">Widget «Próximo toque»</string>
+    <string name="settings_widget_subtitle">Fija tu próximo toque y hora de salida en la pantalla de inicio.</string>
+    <string name="settings_widget_pin_cta">Agregar a pantalla de inicio</string>
+    <string name="settings_widget_pinned_ok">Solicitud enviada para agregar el widget a tu pantalla de inicio.</string>
+    <string name="settings_widget_pin_unsupported">Mantén presionada la pantalla de inicio y elige Widgets → Apptividades.</string>
+
+    <string name="settings_delete_account_button">Eliminar cuenta y datos</string>
+    <string name="delete_account_dialog_title">¿Eliminar cuenta y todos tus datos?</string>
+    <string name="delete_account_dialog_body">Esta acción borra permanentemente tus actividades, proveedores, cuentas bancarias, ajustes, recibos y marca personal en la nube y en este dispositivo. No se puede deshacer.</string>
+    <string name="delete_account_confirm_label">Escribe ELIMINAR para confirmar</string>
+    <string name="delete_account_confirm_word">ELIMINAR</string>
+    <string name="delete_account_confirm_cta">Eliminar definitivamente</string>
+    <string name="delete_account_success">Cuenta y datos eliminados correctamente.</string>
+
+    <!-- Groq AI Integration (Settings + Historical & Route Analytics) -->
+    <string name="nav_ai_analyst">Analista IA (Groq)</string>
+    <string name="settings_groq_title">Inteligencia Artificial (Groq)</string>
+    <string name="settings_groq_subtitle">Analiza tu histórico de ingresos, cobros y rutas con velocidad ultra rápida.</string>
+    <string name="settings_groq_status_connected">Activa</string>
+    <string name="settings_groq_status_missing">Sin configurar</string>
+    <string name="settings_groq_key_label">API Key de Groq</string>
+    <string name="settings_groq_key_hint">gsk_…</string>
+    <string name="settings_groq_key_saved_hint">Clave guardada (cifrada en Keystore): %s</string>
+    <string name="settings_groq_key_fallback_hint">Usando clave configurada del proyecto. Puedes ingresar tu propia clave abajo.</string>
+    <string name="settings_groq_save_key">Guardar clave</string>
+    <string name="settings_groq_test_connection">Probar</string>
+    <string name="settings_groq_remove_key">Quitar clave</string>
+    <string name="settings_groq_model_label">Modelo de Groq</string>
+    <string name="settings_groq_anonymize_title">Anonimizar nombres de clientes</string>
+    <string name="settings_groq_anonymize_desc">Envía «Proveedor A, B…» en lugar de nombres reales al analizar tus datos en Groq.</string>
+    <string name="settings_groq_privacy_note">Tu clave se cifra localmente en Android Keystore (AES-GCM). Nunca se envían cuentas bancarias, correos ni teléfonos a Groq.</string>
+    <string name="settings_groq_open_analyst">Abrir Analista IA</string>
+
+    <string name="ai_screen_title">Analista IA · Groq</string>
+    <string name="ai_clear_chat_cd">Limpiar conversación</string>
+    <string name="ai_dataset_strip">%1$d toques · %2$d rutas medidas · %3$d meses activos</string>
+    <string name="ai_privacy_badge_anon">Clientes anonimizados</string>
+    <string name="ai_privacy_badge_safe">Sin cuentas ni correos</string>
+    <string name="ai_unconfigured_title">Conecta tu API Key de Groq</string>
+    <string name="ai_unconfigured_body">Obtén una clave en console.groq.com y agrégala en Ajustes para analizar tu histórico financiero, tarifas, cobros y logística de rutas en segundos.</string>
+    <string name="ai_unconfigured_cta">Configurar Groq en Ajustes</string>
+    <string name="ai_presets_heading">Análisis rápidos con tus datos reales</string>
+    <string name="ai_preset_finance_title">Diagnóstico financiero y tarifas</string>
+    <string name="ai_preset_finance_sub">Histórico 12 meses, margen neto y dependencia de clientes</string>
+    <string name="ai_preset_routes_title">Rutas, distancias y logística</string>
+    <string name="ai_preset_routes_sub">Km, tiempos de viaje, dobles toques y rentabilidad por traslado</string>
+    <string name="ai_preset_receivables_title">Estrategia de cobros y liquidez</string>
+    <string name="ai_preset_receivables_sub">Prioridad de vencidos y recomendaciones de anticipo</string>
+    <string name="ai_preset_goal_title">Plan para lograr la meta del mes</string>
+    <string name="ai_preset_goal_sub">Brecha actual y fines de semana disponibles</string>
+    <string name="ai_input_placeholder">Pregunta sobre tu histórico, hoteles o rutas…</string>
+    <string name="ai_send_cd">Enviar consulta a Groq</string>
+    <string name="ai_thinking">Analizando histórico y rutas con Groq…</string>
+    <string name="ai_copy_response">Copiar análisis</string>
+    <string name="ai_copied_snackbar">Análisis copiado al portapapeles.</string>
+    <string name="reports_ai_card_title">Analista IA · Histórico y Rutas</string>
+    <string name="reports_ai_card_subtitle">Detecta tendencias de ingresos, rentabilidad por hotel y cuellos de botella en tus rutas usando Groq.</string>
+    <string name="reports_ai_card_cta">Abrir Analista IA</string>
+</resources>

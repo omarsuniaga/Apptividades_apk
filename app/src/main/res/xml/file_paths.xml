@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Strictly app-private cache directory for temporary PDF account statements -->
+    <cache-path
+        name="statements"
+        path="statements/" />
+</paths>
