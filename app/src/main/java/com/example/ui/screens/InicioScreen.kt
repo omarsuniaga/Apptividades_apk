@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Campaign
 import androidx.compose.material.icons.outlined.RequestQuote
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -114,6 +115,7 @@ fun InicioScreen(
     onQuickMessageSupplierWithPreset: (Activity, SupplierMessagePreset) -> Unit = { a, _ -> onQuickMessageSupplier(a) },
     onSetContingencyUnderControl: (String, Boolean) -> Unit = { _, _ -> },
     onOpenQuoteCreator: () -> Unit = {},
+    onOpenQuoteFunnel: () -> Unit = {},
     onOpenAiAnalyst: () -> Unit = {},
 ) {
     val colors = ApptividadesThemeDefaults.colors
@@ -309,6 +311,27 @@ fun InicioScreen(
                                         onOpenQuoteCreator()
                                     },
                                     modifier = Modifier.testTag("inicio_menu_quotes"),
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.nav_quote_funnel),
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                            color = colors.ink,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Campaign,
+                                            contentDescription = null,
+                                            tint = colors.accentHover,
+                                        )
+                                    },
+                                    onClick = {
+                                        showQuickMenu = false
+                                        onOpenQuoteFunnel()
+                                    },
+                                    modifier = Modifier.testTag("inicio_menu_quote_funnel"),
                                 )
                                 DropdownMenuItem(
                                     text = {

@@ -145,6 +145,17 @@ class AppContainer(context: Context) {
         }
     }
 
+    val quoteFunnelPort: com.example.data.port.QuoteFunnelPort =
+        com.example.data.local.quotes.RoomQuoteFunnelRepository(
+            com.example.data.local.quotes.QuotesDatabase.getInstance(appContext).savedQuoteDao(),
+            moshi,
+        )
+
+    val quoteFollowUpPort: com.example.data.port.QuoteFollowUpPort =
+        com.example.alarms.QuoteFollowUpScheduler(appContext)
+
+    val quoteFunnelManager: QuoteFunnelManager = QuoteFunnelManager(quoteFunnelPort, quoteFollowUpPort)
+
     val activityFinancePort: ActivityFinancePort = ActivityFinanceStore(
         context = appContext,
         moshi = moshi,
