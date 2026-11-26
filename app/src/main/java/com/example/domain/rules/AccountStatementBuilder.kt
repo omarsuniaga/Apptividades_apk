@@ -9,6 +9,7 @@ import java.math.BigDecimal
 import java.text.Normalizer
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
@@ -87,10 +88,13 @@ object AccountStatementBuilder {
 
         val displaySupplier = supplierResolution.canonicalToDisplay[targetKey] ?: trimmedSupplier
 
-        val matchingUnpaidPast = activities
+        // Suppliers arrange payment for the whole month, so confirmed gigs that are
+        // still to be played this month belong in the statement too.
+        val currentMonth = YearMonth.from(today)
+        val billable = activities
             .filter { act ->
                 if (act.paymentStatus != PaymentStatus.PENDIENTE ||
-                    !act.eventDate.isBefore(today) ||
+                    !(act.eventDate.isBefore(today) || YearMonth.from(act.eventDate) == currentMonth) ||
                     act.currency != currency ||
                     supplierResolution.canonicalKey(act.supplierName) != targetKey
                 ) {
@@ -102,11 +106,11 @@ object AccountStatementBuilder {
             }
             .sortedWith(compareBy<Activity> { it.eventDate }.thenBy { it.eventTime })
 
-        require(matchingUnpaidPast.isNotEmpty()) {
-            "No hay servicios pasados pendientes de pago para $displaySupplier en ${currency.code}."
+        require(billable.isNotEmpty()) {
+            "No hay servicios pendientes de pago hasta este mes para $displaySupplier en ${currency.code}."
         }
 
-        val items = matchingUnpaidPast.map { act ->
+        val items = billable.map { act ->
             val breakdown = ActivityFinanceCalculator.breakdown(act, financialRecords[act.id])
             val status = ReceivablesCalculator.classify(act.eventDate, today)
             val overdueDays = if (status == ReceivableStatus.VENCIDO) {
