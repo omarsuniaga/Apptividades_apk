@@ -29,6 +29,8 @@ enum class GroqModelOption(
 
 data class GroqAiSettings(
     val hasUserApiKey: Boolean = false,
+    /** A key is stored but cannot be read anymore: the user has to paste it again. */
+    val keyNeedsReentry: Boolean = false,
     val maskedKeyPreview: String? = null,
     val selectedModel: GroqModelOption = GroqModelOption.GPT_OSS_120B,
     val anonymizeClientNames: Boolean = false,

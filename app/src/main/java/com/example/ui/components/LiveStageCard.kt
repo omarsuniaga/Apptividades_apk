@@ -70,6 +70,7 @@ fun LiveStageCard(
     onQuickMessage: (SupplierMessagePreset?) -> Unit,
     onToggleUnderControl: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    chainedFromVenue: String? = null,
 ) {
     val colors = ApptividadesThemeDefaults.colors
     val context = LocalContext.current
@@ -123,7 +124,15 @@ fun LiveStageCard(
         DominicanFormatter.formatTime12h(it)
     }.orEmpty()
 
-    val nextMilestoneLine = when (snapshot.nextMilestoneKind) {
+    val isBeforeLeaving = snapshot.nextMilestoneKind == LiveMilestoneKind.PREPARE ||
+        snapshot.nextMilestoneKind == LiveMilestoneKind.LEAVE
+    val nextMilestoneLine = if (chainedFromVenue != null && isBeforeLeaving) {
+        stringResource(
+            R.string.route_next_leave_from_venue,
+            chainedFromVenue,
+            DominicanFormatter.formatTime12h(timeline.leaveAt.toLocalTime()),
+        )
+    } else when (snapshot.nextMilestoneKind) {
         LiveMilestoneKind.PREPARE -> stringResource(R.string.live_stage_next_prepare, nextMilestoneTime)
         LiveMilestoneKind.LEAVE -> stringResource(R.string.live_stage_next_leave, nextMilestoneTime)
         LiveMilestoneKind.ARRIVE -> stringResource(R.string.live_stage_next_arrive, nextMilestoneTime)

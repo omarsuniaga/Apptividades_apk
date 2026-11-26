@@ -103,10 +103,10 @@ class AccountStatementBuilderTest {
                 amount = "9000",
                 status = PaymentStatus.PAGADO,
             ),
-            // Should be excluded: today/future
+            // Should be excluded: a later month
             gig(
-                id = "g_today",
-                date = today,
+                id = "g_next_month",
+                date = LocalDate.of(2026, 12, 4),
                 supplier = "José David",
                 amount = "7000",
             ),
@@ -188,6 +188,31 @@ class AccountStatementBuilderTest {
         assertEquals(listOf("usd1"), usdStatement.items.map { it.activityId })
         assertEquals(BigDecimal("180"), usdStatement.totalPending)
         assertEquals(listOf("b_usd"), usdStatement.bankAccounts.map { it.id })
+    }
+
+    @Test
+    fun includesEveryUnpaidActivityOfTheCurrentMonthEvenIfNotPlayedYet() {
+        val activities = listOf(
+            gig(id = "played", date = LocalDate.of(2026, 11, 3), amount = "7000"),
+            gig(id = "today", date = today, amount = "7000"),
+            gig(id = "lastDay", date = LocalDate.of(2026, 11, 30), amount = "6000"),
+            gig(id = "paidAhead", date = LocalDate.of(2026, 11, 27), status = PaymentStatus.PAGADO),
+            gig(id = "nextMonth", date = LocalDate.of(2026, 12, 1)),
+            gig(id = "nextYear", date = LocalDate.of(2027, 11, 25)),
+        )
+
+        val statement = AccountStatementBuilder.build(
+            supplierName = "José David",
+            currency = Currency.DOP,
+            activities = activities,
+            bankAccounts = emptyList(),
+            today = today,
+        )
+
+        assertEquals(listOf("played", "today", "lastDay"), statement.items.map { it.activityId })
+        assertEquals(BigDecimal("20000"), statement.totalPending)
+        assertEquals(BigDecimal.ZERO, statement.overdueTotal)
+        assertEquals(0L, statement.items.last().overdueDays)
     }
 
     @Test(expected = IllegalArgumentException::class)

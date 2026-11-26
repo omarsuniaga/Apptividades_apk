@@ -1,5 +1,6 @@
 package com.example.domain.model
 
+import com.example.domain.rules.RouteOriginKind
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -127,6 +128,15 @@ data class CachedActivityRoute(
     val travelMinutes: Int,
     val distanceKm: Double? = null,
     val fromOsrm: Boolean = true,
+    val originKind: RouteOriginKind? = null,
+    val originVenueName: String? = null,
+    val shortfallMinutes: Int = 0,
+    val unpinnedPreviousVenueName: String? = null,
+    /** Times from the artist's tracked route; [travelMinutes] stays the measured estimate. */
+    val trackedDriveMinutes: Int? = null,
+    val trackedWalkMinutes: Int? = null,
+    val trackedSetupMinutes: Int? = null,
+    val trackedMarginMinutes: Int? = null,
 ) {
     /**
      * Returns true when origin (~1 km tolerance) and destination (~50 m tolerance) match,
@@ -164,7 +174,20 @@ data class ScheduledDeparture(
     val description: String? = null,
     val contingencyAtEpochMillis: Long? = null,
     val contingencyFinalAtEpochMillis: Long? = null,
+    val originKind: RouteOriginKind? = null,
+    val originVenueName: String? = null,
+    val originLatitude: Double? = null,
+    val originLongitude: Double? = null,
+    val shortfallMinutes: Int = 0,
+    val unpinnedPreviousVenueName: String? = null,
+    /** True when [travelMinutes] is the artist's own driving time. */
+    val isTrackedDrive: Boolean = false,
+    /** Set with a tracked route: leaving after this means arriving late even if all goes well. */
+    val latestLeaveAtEpochMillis: Long? = null,
 ) {
+    /** The artist leaves for this event straight from the previous one. */
+    val isChained: Boolean get() = originKind == RouteOriginKind.PREVIOUS_EVENT
+
     val hasCoordinates: Boolean get() = latitude != null && longitude != null
 }
 

@@ -83,6 +83,8 @@ fun EventTimelineCard(
     onApplyActivityOverride: (ActivityTimelineOverride?) -> Unit,
     onSaveDefaultSettings: (LabSettings) -> Unit,
     modifier: Modifier = Modifier,
+    chainedFromVenue: String? = null,
+    displayOverride: ActivityTimelineOverride? = timingOverride,
 ) {
     val colors = ApptividadesThemeDefaults.colors
     var showAdjustDialog by remember { mutableStateOf(false) }
@@ -173,7 +175,7 @@ fun EventTimelineCard(
                     settings,
                     routeTravelMinutes,
                     routeDistanceKm,
-                    timingOverride,
+                    displayOverride,
                 ) {
                     EventTimelineCalculator.calculate(
                         eventDate = eventDate,
@@ -181,12 +183,12 @@ fun EventTimelineCard(
                         settings = settings,
                         routeTravelMinutes = routeTravelMinutes,
                         routeDistanceKm = routeDistanceKm,
-                        override = timingOverride,
+                        override = displayOverride,
                     )
                 }
 
                 // Quick 3-metric strip: Prepárate / Sales / Te desocupas
-                TimelineQuickStrip(timeline = timeline)
+                TimelineQuickStrip(timeline = timeline, showPrepare = chainedFromVenue == null)
 
                 if (!timeline.hasTravelEstimate) {
                     Surface(
@@ -205,10 +207,15 @@ fun EventTimelineCard(
 
                 // Vertical timeline milestones
                 Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                    timeline.steps.forEachIndexed { index, step ->
+                    // Leaving from the previous event leaves nothing to prepare at home.
+                    val visibleSteps = timeline.steps.filterNot {
+                        chainedFromVenue != null && it.kind == TimelineStepKind.PREPARE
+                    }
+                    visibleSteps.forEachIndexed { index, step ->
                         TimelineStepRow(
                             step = step,
-                            isLast = index == timeline.steps.lastIndex,
+                            isLast = index == visibleSteps.lastIndex,
+                            chainedFromVenue = chainedFromVenue,
                         )
                     }
                 }
@@ -243,7 +250,7 @@ fun EventTimelineCard(
 }
 
 @Composable
-private fun TimelineQuickStrip(timeline: EventTimeline) {
+private fun TimelineQuickStrip(timeline: EventTimeline, showPrepare: Boolean = true) {
     val colors = ApptividadesThemeDefaults.colors
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -258,11 +265,13 @@ private fun TimelineQuickStrip(timeline: EventTimeline) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            QuickMetric(
-                label = stringResource(R.string.timeline_strip_prepare),
-                value = DominicanFormatter.formatTime12h(timeline.prepareStartAt.toLocalTime()),
-                valueColor = colors.ink,
-            )
+            if (showPrepare) {
+                QuickMetric(
+                    label = stringResource(R.string.timeline_strip_prepare),
+                    value = DominicanFormatter.formatTime12h(timeline.prepareStartAt.toLocalTime()),
+                    valueColor = colors.ink,
+                )
+            }
             QuickMetric(
                 label = stringResource(R.string.timeline_strip_leave),
                 value = DominicanFormatter.formatTime12h(timeline.leaveAt.toLocalTime()),
@@ -275,7 +284,9 @@ private fun TimelineQuickStrip(timeline: EventTimeline) {
             )
             QuickMetric(
                 label = stringResource(R.string.timeline_strip_total),
-                value = EventTimelineCalculator.formatDurationCompact(timeline.totalMinutes),
+                value = EventTimelineCalculator.formatDurationCompact(
+                    if (showPrepare) timeline.totalMinutes else timeline.minutesFromLeaving,
+                ),
                 valueColor = colors.muted,
             )
         }
@@ -312,6 +323,7 @@ private fun QuickMetric(
 private fun TimelineStepRow(
     step: TimelineStep,
     isLast: Boolean,
+    chainedFromVenue: String? = null,
 ) {
     val colors = ApptividadesThemeDefaults.colors
 
@@ -324,7 +336,15 @@ private fun TimelineStepRow(
         )
         TimelineStepKind.LEAVE -> Quad(
             Icons.Outlined.Alarm,
-            stringResource(R.string.timeline_step_leave),
+            if (chainedFromVenue != null) {
+                stringResource(
+                    R.string.route_next_leave_from_venue,
+                    chainedFromVenue,
+                    DominicanFormatter.formatTime12h(step.startAt.toLocalTime()),
+                )
+            } else {
+                stringResource(R.string.timeline_step_leave)
+            },
             colors.accent,
             true,
         )

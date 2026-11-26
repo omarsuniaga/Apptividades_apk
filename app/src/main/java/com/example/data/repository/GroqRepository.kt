@@ -64,6 +64,7 @@ class GroqRepository(
         sessionDataStore.observeGroqPrefs().map { stored ->
             GroqAiSettings(
                 hasUserApiKey = stored.hasEncryptedUserKey,
+                keyNeedsReentry = stored.keyNeedsReentry,
                 maskedKeyPreview = stored.maskedKeyPreview,
                 selectedModel = stored.selectedModel,
                 anonymizeClientNames = stored.anonymizeClientNames,

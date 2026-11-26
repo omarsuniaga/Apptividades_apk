@@ -1,5 +1,14 @@
 package com.example.ui.screens
 
+import com.example.ui.components.MyRouteSection
+import com.example.domain.rules.withTracked
+import com.example.domain.rules.timingOverride
+import com.example.domain.rules.effectiveDriveMinutes
+import com.example.domain.rules.TrackedRoutes
+import com.example.domain.rules.TrackedRoute
+import com.example.ui.components.routeSummaryText
+import com.example.ui.components.RouteWarnings
+import com.example.domain.rules.RouteOriginKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -145,6 +154,8 @@ fun ActivityFormScreen(
     initialFinancialRecord: ActivityFinancialRecord = ActivityFinancialRecord(),
     today: LocalDate = DominicanFormatter.todaySantoDomingo(),
     onFinancialRecordChanged: (ActivityFinancialRecord) -> Unit = {},
+    trackedRoutes: Map<String, TrackedRoute> = emptyMap(),
+    onSaveTrackedRoute: (venueKey: String, route: TrackedRoute?) -> Unit = { _, _ -> },
 ) {
     val colors = ApptividadesThemeDefaults.colors
     val isEditing = existingActivity != null
@@ -201,7 +212,8 @@ fun ActivityFormScreen(
     var isEstimatingRoute by remember { mutableStateOf(false) }
 
     // Fetch & store OSRM estimate once per coordinate pair (reusing cached result if unchanged)
-    LaunchedEffect(latitude, longitude) {
+    // Saved routes change the departure times, which can change where the trip starts.
+    LaunchedEffect(latitude, longitude, trackedRoutes) {
         val lat = latitude
         val lng = longitude
         if (lat == null || lng == null) {
@@ -209,14 +221,16 @@ fun ActivityFormScreen(
             isEstimatingRoute = false
             return@LaunchedEffect
         }
-        val existing = cachedRoute
+        // A saved activity is always asked again: its origin depends on the other events of
+        // the day. The resolver answers from the cache when nothing changed.
+        val existing = cachedRoute.takeIf { existingActivity == null }
         if (existing != null &&
             kotlin.math.abs(existing.destLat - lat) < 0.0005 &&
             kotlin.math.abs(existing.destLng - lng) < 0.0005
         ) {
             return@LaunchedEffect
         }
-        isEstimatingRoute = true
+        isEstimatingRoute = cachedRoute == null
         val estimated = runCatching { onEstimateRoute(lat, lng, existingActivity?.id) }.getOrNull()
         isEstimatingRoute = false
         if (estimated != null) {
@@ -856,19 +870,15 @@ fun ActivityFormScreen(
                             )
                         }
                     } else if (cachedRoute != null) {
-                        val route = cachedRoute!!
-                        val routeLabel = if (route.distanceKm != null) {
-                            stringResource(
-                                R.string.departure_osrm_distance_time,
-                                DominicanFormatter.formatOneDecimal(route.distanceKm),
-                                route.travelMinutes,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.departure_osrm_time_only,
-                                route.travelMinutes,
-                            )
-                        }
+                        val trackedRoute = TrackedRoutes.find(trackedRoutes, venueName)
+                        val route = cachedRoute!!.withTracked(trackedRoute)
+                        val routeLabel = routeSummaryText(
+                            distanceKm = route.distanceKm,
+                            travelMinutes = route.effectiveDriveMinutes,
+                            originKind = route.originKind,
+                            originVenueName = route.originVenueName,
+                            isTrackedDrive = route.trackedDriveMinutes != null,
+                        )
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = colors.neutralChipBg,
@@ -884,8 +894,25 @@ fun ActivityFormScreen(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             )
                         }
+                        RouteWarnings(
+                            shortfallMinutes = route.shortfallMinutes,
+                            unpinnedPreviousVenueName = route.unpinnedPreviousVenueName,
+                        )
+                        if (venueName.isNotBlank()) {
+                            MyRouteSection(
+                                venueName = venueName.trim(),
+                                route = route,
+                                tracked = trackedRoute,
+                                eventDate = eventDate,
+                                eventTime = eventTime,
+                                settings = settings,
+                                dayOverride = timingOverride,
+                                onSave = onSaveTrackedRoute,
+                            )
+                        }
                     }
 
+                    val chainedRoute = cachedRoute?.takeIf { it.originKind == RouteOriginKind.PREVIOUS_EVENT }
                     NavigationActionButtons(
                         venueName = listOfNotNull(
                             venueName.trim().ifBlank { null },
@@ -894,6 +921,8 @@ fun ActivityFormScreen(
                         latitude = latitude,
                         longitude = longitude,
                         idTag = "form_venue",
+                        originLatitude = chainedRoute?.originLat,
+                        originLongitude = chainedRoute?.originLng,
                     )
 
                     if (filteredSavedVenues.isNotEmpty() || filteredVenueSuggestions.isNotEmpty()) {
@@ -1201,8 +1230,16 @@ fun ActivityFormScreen(
                     eventDate = eventDate,
                     eventTime = eventTime,
                     settings = settings,
-                    routeTravelMinutes = cachedRoute?.travelMinutes,
+                    routeTravelMinutes = cachedRoute
+                        ?.withTracked(TrackedRoutes.find(trackedRoutes, venueName))
+                        ?.effectiveDriveMinutes,
                     routeDistanceKm = cachedRoute?.distanceKm,
+                    displayOverride = cachedRoute
+                        ?.withTracked(TrackedRoutes.find(trackedRoutes, venueName))
+                        .timingOverride(timingOverride),
+                    chainedFromVenue = cachedRoute
+                        ?.takeIf { it.originKind == RouteOriginKind.PREVIOUS_EVENT }
+                        ?.originVenueName,
                     timingOverride = timingOverride,
                     onApplyActivityOverride = { updatedOverride ->
                         timingOverride = updatedOverride

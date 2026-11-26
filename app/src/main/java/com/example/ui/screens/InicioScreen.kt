@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.domain.rules.effectiveDriveMinutes
+import com.example.ui.components.withLatestLeave
+import com.example.ui.components.routeSummaryText
+import com.example.ui.components.RouteWarnings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -86,7 +90,6 @@ import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.ErrorBanner
 import com.example.ui.components.LiveStageCard
 import com.example.ui.components.LoadingStateBlock
-import com.example.ui.components.NavigationActionButtons
 import com.example.ui.components.OfflineSyncBanner
 import com.example.ui.components.UtilityIconTile
 import com.example.ui.theme.ApptividadesThemeDefaults
@@ -476,6 +479,9 @@ fun InicioScreen(
                             act.eventDate.atTime(act.eventTime).isAfter(nowLocal)
                         LiveStageCard(
                             featured = featuredToday,
+                            chainedFromVenue = state.scheduledDepartures[act.id]
+                                ?.takeIf { it.isChained }
+                                ?.originVenueName,
                             venueDisplay = state.venueResolution.displayName(act.venueName),
                             supplierDisplay = state.supplierResolution.displayName(act.supplierName),
                             showContingencyControl = showControl,
@@ -1090,69 +1096,69 @@ private fun UpcomingActivityCard(
                                 modifier = Modifier.size(15.dp),
                             )
                             Text(
-                                text = stringResource(
-                                    R.string.departure_leave_and_prepare,
-                                    DominicanFormatter.formatTime12h(prepareTime),
-                                    DominicanFormatter.formatTime12h(leaveTime),
+                                text = withLatestLeave(
+                                    if (scheduledDeparture.isChained) {
+                                        stringResource(
+                                            R.string.route_leave_from_venue,
+                                            scheduledDeparture.originVenueName.orEmpty(),
+                                            DominicanFormatter.formatTime12h(leaveTime),
+                                        )
+                                    } else {
+                                        stringResource(
+                                            R.string.departure_leave_and_prepare,
+                                            DominicanFormatter.formatTime12h(prepareTime),
+                                            DominicanFormatter.formatTime12h(leaveTime),
+                                        )
+                                    },
+                                    scheduledDeparture.latestLeaveAtEpochMillis,
                                 ),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = colors.accentHover,
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        val routeEstLabel = when {
-                            scheduledDeparture.distanceKm != null -> stringResource(
-                                R.string.departure_osrm_distance_time,
-                                DominicanFormatter.formatOneDecimal(scheduledDeparture.distanceKm),
-                                scheduledDeparture.travelMinutes,
+                        val routeEstLabel = if (
+                            scheduledDeparture.distanceKm != null || scheduledDeparture.travelMinutes > 0
+                        ) {
+                            routeSummaryText(
+                                distanceKm = scheduledDeparture.distanceKm,
+                                travelMinutes = scheduledDeparture.travelMinutes,
+                                originKind = scheduledDeparture.originKind,
+                                originVenueName = scheduledDeparture.originVenueName,
+                                isTrackedDrive = scheduledDeparture.isTrackedDrive,
                             )
-                            scheduledDeparture.travelMinutes > 0 -> stringResource(
-                                R.string.departure_osrm_time_only,
-                                scheduledDeparture.travelMinutes,
-                            )
-                            else -> stringResource(R.string.departure_no_coords_note)
+                        } else {
+                            stringResource(R.string.departure_no_coords_note)
                         }
                         Text(
                             text = routeEstLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = colors.muted,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
+                        )
+                        RouteWarnings(
+                            shortfallMinutes = scheduledDeparture.shortfallMinutes,
+                            unpinnedPreviousVenueName = scheduledDeparture.unpinnedPreviousVenueName,
                         )
                     }
                 }
             } else if (cachedRoute != null) {
-                val routeEstLabel = if (cachedRoute.distanceKm != null) {
-                    stringResource(
-                        R.string.departure_osrm_distance_time,
-                        DominicanFormatter.formatOneDecimal(cachedRoute.distanceKm),
-                        cachedRoute.travelMinutes,
-                    )
-                } else {
-                    stringResource(
-                        R.string.departure_osrm_time_only,
-                        cachedRoute.travelMinutes,
-                    )
-                }
                 Text(
-                    text = routeEstLabel,
+                    text = routeSummaryText(
+                        distanceKm = cachedRoute.distanceKm,
+                        travelMinutes = cachedRoute.effectiveDriveMinutes,
+                        originKind = cachedRoute.originKind,
+                        originVenueName = cachedRoute.originVenueName,
+                        isTrackedDrive = cachedRoute.trackedDriveMinutes != null,
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.muted,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
-            NavigationActionButtons(
-                venueName = listOfNotNull(
-                    venueDisplay.ifBlank { activity.venueName }.takeIf { it.isNotBlank() },
-                    activity.venueAddress?.takeIf { it.isNotBlank() },
-                ).joinToString(", ").ifBlank { null },
-                latitude = activity.latitude,
-                longitude = activity.longitude,
-                idTag = "inicio_${activity.id}",
-            )
 
             if (showContingencyControl) {
                 if (isUnderControl) {

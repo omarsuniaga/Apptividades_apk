@@ -1296,6 +1296,8 @@ private fun ApptividadesSignedInShell(
                     initialTimingOverride = pendingNewTimingOverride,
                     onTimingOverrideChanged = { pendingNewTimingOverride = it },
                     onSaveDefaultSettings = { updated -> viewModel.saveSettings(updated) {} },
+                    trackedRoutes = dataState.trackedRoutes,
+                    onSaveTrackedRoute = viewModel::saveTrackedRoute,
                     defaultUsdToDopRate = dataState.privacyPreferences.defaultUsdToDopRate,
                     initialFinancialRecord = pendingNewFinancialRecord,
                     today = dataState.today,
@@ -1349,6 +1351,8 @@ private fun ApptividadesSignedInShell(
                         )
                     },
                     onSaveDefaultSettings = { updated -> viewModel.saveSettings(updated) {} },
+                    trackedRoutes = dataState.trackedRoutes,
+                    onSaveTrackedRoute = viewModel::saveTrackedRoute,
                     onQuickMessageSupplier = { quickMessageRequest = it to SupplierMessagePreset.ARRIVED },
                     onExportToCalendar = ::exportActivityToCalendar,
                     defaultUsdToDopRate = dataState.privacyPreferences.defaultUsdToDopRate,

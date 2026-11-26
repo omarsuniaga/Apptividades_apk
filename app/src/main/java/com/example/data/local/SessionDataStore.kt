@@ -1,5 +1,8 @@
 package com.example.data.local
 
+import com.example.domain.rules.TrackedRoute
+import androidx.annotation.VisibleForTesting
+import kotlinx.coroutines.flow.onStart
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -18,6 +21,7 @@ import com.example.domain.model.ActivityTimelineOverride
 import com.example.domain.model.ArtistBrandProfile
 import com.example.domain.model.AuthSession
 import com.example.domain.model.CachedActivityRoute
+import com.example.domain.rules.RouteOriginKind
 import com.example.domain.model.GroqModelOption
 import com.example.domain.model.ScheduledDeparture
 import kotlinx.coroutines.flow.Flow
@@ -260,40 +264,98 @@ class SessionDataStore(
 
     data class StoredGroqPrefs(
         val hasEncryptedUserKey: Boolean = false,
+        val keyNeedsReentry: Boolean = false,
         val maskedKeyPreview: String? = null,
         val selectedModel: GroqModelOption = GroqModelOption.GPT_OSS_120B,
         val anonymizeClientNames: Boolean = false,
     )
 
-    fun observeGroqPrefs(): Flow<StoredGroqPrefs> =
-        context.apptividadesDataStore.data.map { prefs ->
-            val enc = prefs[Keys.GROQ_API_KEY_ENC]
-            StoredGroqPrefs(
-                hasEncryptedUserKey = !enc.isNullOrBlank(),
-                maskedKeyPreview = prefs[Keys.GROQ_API_KEY_MASKED]?.takeIf { it.isNotBlank() },
-                selectedModel = GroqModelOption.fromId(prefs[Keys.GROQ_MODEL_ID]),
-                anonymizeClientNames = prefs[Keys.GROQ_ANONYMIZE_CLIENTS] ?: false,
-            )
-        }
+    /*
+     * The Groq key belongs to the signed-in account. Keys saved before accounts were
+     * separated live under the unscoped names and are moved to the first account that reads them.
+     */
+    private fun groqKeyName(userId: String) = stringPreferencesKey("groq_api_key_encrypted_$userId")
 
-    suspend fun loadDecryptedGroqApiKey(): String? {
-        val prefs = context.apptividadesDataStore.data.first()
-        val raw = prefs[Keys.GROQ_API_KEY_ENC] ?: return null
-        return tokenCipher.decrypt(raw)?.trim()?.takeIf { it.isNotEmpty() }
+    private fun groqMaskName(userId: String) = stringPreferencesKey("groq_api_key_masked_$userId")
+
+    private suspend fun adoptLegacyGroqKey() {
+        val current = context.apptividadesDataStore.data.first()
+        if (current[Keys.USER_ID] == null || current[Keys.GROQ_API_KEY_ENC] == null) return
+        context.apptividadesDataStore.edit { prefs ->
+            val userId = prefs[Keys.USER_ID] ?: return@edit
+            val legacy = prefs[Keys.GROQ_API_KEY_ENC] ?: return@edit
+            if (prefs[groqKeyName(userId)] == null) {
+                prefs[groqKeyName(userId)] = legacy
+                prefs[Keys.GROQ_API_KEY_MASKED]?.let { prefs[groqMaskName(userId)] = it }
+            }
+            prefs.remove(Keys.GROQ_API_KEY_ENC)
+            prefs.remove(Keys.GROQ_API_KEY_MASKED)
+        }
     }
 
+    /** Null unless the stored value is really encrypted and can be decrypted on this device. */
+    private fun readGroqKey(stored: String): String? =
+        stored.takeIf { tokenCipher.isEncrypted(it) }
+            ?.let { tokenCipher.decrypt(it) }
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+
+    fun observeGroqPrefs(): Flow<StoredGroqPrefs> =
+        context.apptividadesDataStore.data
+            .onStart { adoptLegacyGroqKey() }
+            .map { prefs ->
+                val userId = prefs[Keys.USER_ID]
+                // The unscoped fallback covers a sign-in that happens while this flow is collected.
+                val stored = userId?.let { prefs[groqKeyName(it)] ?: prefs[Keys.GROQ_API_KEY_ENC] }
+                val readable = stored != null && readGroqKey(stored) != null
+                val mask = userId?.let { prefs[groqMaskName(it)] ?: prefs[Keys.GROQ_API_KEY_MASKED] }
+                StoredGroqPrefs(
+                    hasEncryptedUserKey = readable,
+                    keyNeedsReentry = stored != null && !readable,
+                    maskedKeyPreview = mask?.takeIf { readable && it.isNotBlank() },
+                    selectedModel = GroqModelOption.fromId(prefs[Keys.GROQ_MODEL_ID]),
+                    anonymizeClientNames = prefs[Keys.GROQ_ANONYMIZE_CLIENTS] ?: false,
+                )
+            }
+
+    suspend fun loadDecryptedGroqApiKey(): String? {
+        adoptLegacyGroqKey()
+        val prefs = context.apptividadesDataStore.data.first()
+        val userId = prefs[Keys.USER_ID] ?: return null
+        return prefs[groqKeyName(userId)]?.let(::readGroqKey)
+    }
+
+    /** Fails, storing nothing, without a signed-in account or when encryption does not work. */
     suspend fun saveEncryptedGroqApiKey(rawKey: String, maskedPreview: String) {
         val encrypted = tokenCipher.encrypt(rawKey.trim())
+        check(tokenCipher.isEncrypted(encrypted)) {
+            "No pudimos cifrar la clave en este teléfono, así que no se guardó."
+        }
         context.apptividadesDataStore.edit { prefs ->
-            prefs[Keys.GROQ_API_KEY_ENC] = encrypted
-            prefs[Keys.GROQ_API_KEY_MASKED] = maskedPreview
+            val userId = checkNotNull(prefs[Keys.USER_ID]) { "Inicia sesión para guardar tu clave." }
+            prefs[groqKeyName(userId)] = encrypted
+            prefs[groqMaskName(userId)] = maskedPreview
+            prefs.remove(Keys.GROQ_API_KEY_ENC)
+            prefs.remove(Keys.GROQ_API_KEY_MASKED)
         }
     }
 
     suspend fun clearGroqApiKey() {
         context.apptividadesDataStore.edit { prefs ->
+            prefs[Keys.USER_ID]?.let { userId ->
+                prefs.remove(groqKeyName(userId))
+                prefs.remove(groqMaskName(userId))
+            }
             prefs.remove(Keys.GROQ_API_KEY_ENC)
             prefs.remove(Keys.GROQ_API_KEY_MASKED)
+        }
+    }
+
+    @VisibleForTesting
+    internal suspend fun writeLegacyGroqKeyForTest(stored: String, maskedPreview: String) {
+        context.apptividadesDataStore.edit { prefs ->
+            prefs[Keys.GROQ_API_KEY_ENC] = stored
+            prefs[Keys.GROQ_API_KEY_MASKED] = maskedPreview
         }
     }
 
@@ -377,6 +439,14 @@ class SessionDataStore(
                     item.description?.let { put("description", it) }
                     item.contingencyAtEpochMillis?.let { put("contingencyAtEpochMillis", it) }
                     item.contingencyFinalAtEpochMillis?.let { put("contingencyFinalAtEpochMillis", it) }
+                    item.originKind?.let { put("originKind", it.name) }
+                    item.originVenueName?.let { put("originVenueName", it) }
+                    item.originLatitude?.let { put("originLatitude", it) }
+                    item.originLongitude?.let { put("originLongitude", it) }
+                    put("shortfallMinutes", item.shortfallMinutes)
+                    item.unpinnedPreviousVenueName?.let { put("unpinnedPreviousVenueName", it) }
+                    put("isTrackedDrive", item.isTrackedDrive)
+                    item.latestLeaveAtEpochMillis?.let { put("latestLeaveAtEpochMillis", it) }
                 }
             )
         }
@@ -406,6 +476,14 @@ class SessionDataStore(
                     put("travelMinutes", item.travelMinutes)
                     if (item.distanceKm != null) put("distanceKm", item.distanceKm)
                     put("fromOsrm", item.fromOsrm)
+                    item.originKind?.let { put("originKind", it.name) }
+                    item.originVenueName?.let { put("originVenueName", it) }
+                    put("shortfallMinutes", item.shortfallMinutes)
+                    item.unpinnedPreviousVenueName?.let { put("unpinnedPreviousVenueName", it) }
+                    item.trackedDriveMinutes?.let { put("trackedDriveMinutes", it) }
+                    item.trackedWalkMinutes?.let { put("trackedWalkMinutes", it) }
+                    item.trackedSetupMinutes?.let { put("trackedSetupMinutes", it) }
+                    item.trackedMarginMinutes?.let { put("trackedMarginMinutes", it) }
                 }
             )
         }
@@ -579,11 +657,87 @@ class SessionDataStore(
                     description = description,
                     contingencyAtEpochMillis = contingencyAt,
                     contingencyFinalAtEpochMillis = contingencyFinalAt,
+                    originKind = obj.optRouteOriginKind(),
+                    originVenueName = obj.optTextOrNull("originVenueName"),
+                    originLatitude = obj.optDouble("originLatitude", Double.NaN).takeIf { !it.isNaN() },
+                    originLongitude = obj.optDouble("originLongitude", Double.NaN).takeIf { !it.isNaN() },
+                    shortfallMinutes = obj.optInt("shortfallMinutes", 0),
+                    unpinnedPreviousVenueName = obj.optTextOrNull("unpinnedPreviousVenueName"),
+                    isTrackedDrive = obj.optBoolean("isTrackedDrive", false),
+                    latestLeaveAtEpochMillis = obj.optLong("latestLeaveAtEpochMillis", -1L).takeIf { it > 0L },
                 )
             }
             map
         }.getOrDefault(emptyMap())
     }
+
+    private fun trackedRoutesName(userId: String) = stringPreferencesKey("tracked_routes_json_$userId")
+
+    /** Routes the artist measured. They belong to the account and survive signing out. */
+    fun observeTrackedRoutes(): Flow<Map<String, TrackedRoute>> =
+        context.apptividadesDataStore.data.map { prefs ->
+            val userId = prefs[Keys.USER_ID]
+            parseTrackedRoutes(userId?.let { prefs[trackedRoutesName(it)] })
+        }
+
+    suspend fun loadTrackedRoutes(): Map<String, TrackedRoute> = observeTrackedRoutes().first()
+
+    /** A null [route] removes the saved route of [venueKey]. */
+    suspend fun saveTrackedRoute(venueKey: String, route: TrackedRoute?) {
+        context.apptividadesDataStore.edit { prefs ->
+            val userId = prefs[Keys.USER_ID] ?: return@edit
+            val routes = parseTrackedRoutes(prefs[trackedRoutesName(userId)]).toMutableMap()
+            if (route == null) routes.remove(venueKey) else routes[venueKey] = route
+            val arr = JSONArray()
+            routes.values.forEach { item ->
+                val drives = JSONObject()
+                item.driveMinutesByOrigin.forEach { (origin, minutes) -> drives.put(origin, minutes) }
+                arr.put(
+                    JSONObject()
+                        .put("venueKey", item.venueKey)
+                        .put("walkMinutes", item.walkMinutes)
+                        .put("setupMinutes", item.setupMinutes)
+                        .put("marginMinutes", item.marginMinutes)
+                        .put("drives", drives)
+                )
+            }
+            prefs[trackedRoutesName(userId)] = arr.toString()
+        }
+    }
+
+    suspend fun clearTrackedRoutes() {
+        context.apptividadesDataStore.edit { prefs ->
+            prefs[Keys.USER_ID]?.let { prefs.remove(trackedRoutesName(it)) }
+        }
+    }
+
+    private fun parseTrackedRoutes(raw: String?): Map<String, TrackedRoute> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return runCatching {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).associate { index ->
+                val obj = arr.getJSONObject(index)
+                val drives = obj.getJSONObject("drives")
+                val venueKey = obj.getString("venueKey")
+                venueKey to TrackedRoute(
+                    venueKey = venueKey,
+                    walkMinutes = obj.getInt("walkMinutes"),
+                    setupMinutes = obj.getInt("setupMinutes"),
+                    marginMinutes = obj.getInt("marginMinutes"),
+                    driveMinutesByOrigin = drives.keys().asSequence().associateWith { drives.getInt(it) },
+                )
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun JSONObject.optMinutesOrNull(key: String): Int? =
+        if (has(key) && !isNull(key)) getInt(key) else null
+
+    private fun JSONObject.optTextOrNull(key: String): String? =
+        optString(key).takeIf { it.isNotBlank() }
+
+    private fun JSONObject.optRouteOriginKind(): RouteOriginKind? =
+        RouteOriginKind.entries.firstOrNull { it.name == optString("originKind") }
 
     private fun parseActivityRoutes(raw: String?): Map<String, CachedActivityRoute> {
         if (raw.isNullOrBlank()) return emptyMap()
@@ -605,6 +759,14 @@ class SessionDataStore(
                     travelMinutes = obj.getInt("travelMinutes"),
                     distanceKm = dist,
                     fromOsrm = obj.optBoolean("fromOsrm", true),
+                    originKind = obj.optRouteOriginKind(),
+                    originVenueName = obj.optTextOrNull("originVenueName"),
+                    shortfallMinutes = obj.optInt("shortfallMinutes", 0),
+                    unpinnedPreviousVenueName = obj.optTextOrNull("unpinnedPreviousVenueName"),
+                    trackedDriveMinutes = obj.optMinutesOrNull("trackedDriveMinutes"),
+                    trackedWalkMinutes = obj.optMinutesOrNull("trackedWalkMinutes"),
+                    trackedSetupMinutes = obj.optMinutesOrNull("trackedSetupMinutes"),
+                    trackedMarginMinutes = obj.optMinutesOrNull("trackedMarginMinutes"),
                 )
             }
             map
