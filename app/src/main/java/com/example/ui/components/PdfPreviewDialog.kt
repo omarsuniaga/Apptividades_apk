@@ -60,7 +60,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.data.PdfStatementSharer
 import com.example.domain.model.BankAccount
@@ -119,8 +118,9 @@ fun PdfPreviewDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = FullScreenDialogProperties,
     ) {
+        FullScreenDialogWindow()
         Column(
             modifier = Modifier
                 .fillMaxSize()

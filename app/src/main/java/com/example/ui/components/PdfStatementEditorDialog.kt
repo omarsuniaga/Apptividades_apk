@@ -67,7 +67,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.domain.model.BankAccount
 import com.example.domain.rules.AccountStatement
@@ -272,8 +271,9 @@ fun PdfStatementEditorDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = FullScreenDialogProperties,
     ) {
+        FullScreenDialogWindow()
         Column(
             modifier = Modifier
                 .fillMaxSize()

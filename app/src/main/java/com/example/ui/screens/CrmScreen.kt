@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.FullScreenDialogWindow
+import com.example.ui.components.FullScreenDialogProperties
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,7 +65,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.domain.model.Currency
 import com.example.domain.rules.CrmAccount
@@ -529,7 +530,8 @@ private fun CrmDetailDialog(
     var confirmDelete by remember { mutableStateOf(false) }
     val message = remember(account, issuerName) { CrmMessageBuilder.build(account, issuerName) }
 
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onClose, properties = FullScreenDialogProperties) {
+        FullScreenDialogWindow()
         Column(
             modifier = Modifier
                 .fillMaxSize()
