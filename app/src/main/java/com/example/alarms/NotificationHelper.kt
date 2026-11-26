@@ -574,11 +574,15 @@ object NotificationHelper {
         venueName: String?,
         latitude: Double?,
         longitude: Double?,
+        originLatitude: Double? = null,
+        originLongitude: Double? = null,
     ): Intent? {
         val url = com.example.domain.rules.NavigationUrlBuilder.googleMapsDirectionsUrl(
             venueName = venueName,
             latitude = latitude,
             longitude = longitude,
+            originLatitude = originLatitude,
+            originLongitude = originLongitude,
         ) ?: return null
         return Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -605,8 +609,16 @@ object NotificationHelper {
         venueName: String?,
         latitude: Double?,
         longitude: Double?,
+        originLatitude: Double? = null,
+        originLongitude: Double? = null,
     ) {
-        val intent = buildGoogleMapsIntent(venueName, latitude, longitude) ?: return
+        val intent = buildGoogleMapsIntent(
+            venueName,
+            latitude,
+            longitude,
+            originLatitude,
+            originLongitude,
+        ) ?: return
         runCatching { context.startActivity(intent) }
     }
 

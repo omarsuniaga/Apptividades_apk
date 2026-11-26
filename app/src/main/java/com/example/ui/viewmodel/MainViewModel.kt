@@ -3,6 +3,8 @@ package com.example.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.data.EventRouteResolver
+import com.example.domain.rules.EventChainPlanner
 import com.example.data.local.LoginHistoryStore
 import com.example.data.port.AccountDeletionPort
 import com.example.data.port.ActivityFinancePort
@@ -1468,58 +1470,35 @@ class MainViewModel(
         destLng: Double,
         existingActivityId: String? = null,
     ): CachedActivityRoute {
-        val settings = _dataState.value.settings
-        val origin = runCatching { mapsAndLocationPort.getLastKnownOrCurrentLocation() }.getOrNull()
-            ?: if (settings.homeLatitude != null && settings.homeLongitude != null) {
-                GeoPoint(settings.homeLatitude, settings.homeLongitude)
-            } else {
-                GeoPoint(
-                    DepartureTimeCalculator.DEFAULT_BAVARO_LAT,
-                    DepartureTimeCalculator.DEFAULT_BAVARO_LNG,
-                )
-            }
-
-        if (!existingActivityId.isNullOrBlank()) {
-            val cached = _dataState.value.activityRoutes[existingActivityId]
-            if (cached != null && cached.fromOsrm && cached.matchesCoordinates(origin.latitude, origin.longitude, destLat, destLng)) {
-                return cached
-            }
+        val state = _dataState.value
+        val resolver = EventRouteResolver(mapsAndLocationPort)
+        val existing = state.activities.firstOrNull { it.id == existingActivityId }
+        if (existing != null) {
+            // The pin being edited may differ from the saved one.
+            resolver.resolve(
+                target = existing.copy(latitude = destLat, longitude = destLng),
+                activities = state.activities,
+                settings = state.settings,
+                overrides = state.activityTimings,
+                cached = state.activityRoutes[existing.id],
+                forceRefresh = false,
+            )?.let { return it }
         }
 
-        val osrm = mapsAndLocationPort.computeRouteEstimate(
-            origin = origin,
+        // A new activity has no saved date or time yet, so it starts from home.
+        val current = runCatching { mapsAndLocationPort.getLastKnownOrCurrentLocation() }.getOrNull()
+        val origin = EventChainPlanner.fallbackOrigin(
+            homeLatitude = state.settings.homeLatitude,
+            homeLongitude = state.settings.homeLongitude,
+            currentLatitude = current?.latitude,
+            currentLongitude = current?.longitude,
+        )
+        return resolver.measure(
+            activityId = existingActivityId.orEmpty(),
+            origin = GeoPoint(origin.latitude, origin.longitude),
             destination = GeoPoint(destLat, destLng),
-        ).getOrNull()
-
-        return if (osrm != null) {
-            CachedActivityRoute(
-                activityId = existingActivityId.orEmpty(),
-                originLat = origin.latitude,
-                originLng = origin.longitude,
-                destLat = destLat,
-                destLng = destLng,
-                travelMinutes = osrm.travelMinutes,
-                distanceKm = osrm.distanceKm,
-                fromOsrm = true,
-            )
-        } else {
-            val offlineMin = DepartureTimeCalculator.estimateOfflineTravelMinutes(
-                originLat = origin.latitude,
-                originLng = origin.longitude,
-                destLat = destLat,
-                destLng = destLng,
-            )
-            CachedActivityRoute(
-                activityId = existingActivityId.orEmpty(),
-                originLat = origin.latitude,
-                originLng = origin.longitude,
-                destLat = destLat,
-                destLng = destLng,
-                travelMinutes = offlineMin,
-                distanceKm = null,
-                fromOsrm = false,
-            )
-        }
+            cached = null,
+        ).copy(originKind = origin.kind)
     }
 
     fun upsertVenue(venue: Venue, onResult: (Venue) -> Unit) {

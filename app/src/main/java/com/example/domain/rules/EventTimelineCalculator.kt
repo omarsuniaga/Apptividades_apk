@@ -58,7 +58,11 @@ data class EventTimeline(
     val totalMinutes: Int,
     val hasTravelEstimate: Boolean,
     val steps: List<TimelineStep>,
-)
+) {
+    /** Duration without the home preparation, for trips that start at another event. */
+    val minutesFromLeaving: Int
+        get() = Duration.between(leaveAt, freeAt).toMinutes().toInt().coerceAtLeast(0)
+}
 
 /**
  * Computes the complete artist event timeline from initial preparation through

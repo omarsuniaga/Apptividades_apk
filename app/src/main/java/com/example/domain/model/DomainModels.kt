@@ -1,5 +1,6 @@
 package com.example.domain.model
 
+import com.example.domain.rules.RouteOriginKind
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalTime
@@ -127,6 +128,10 @@ data class CachedActivityRoute(
     val travelMinutes: Int,
     val distanceKm: Double? = null,
     val fromOsrm: Boolean = true,
+    val originKind: RouteOriginKind? = null,
+    val originVenueName: String? = null,
+    val shortfallMinutes: Int = 0,
+    val unpinnedPreviousVenueName: String? = null,
 ) {
     /**
      * Returns true when origin (~1 km tolerance) and destination (~50 m tolerance) match,
@@ -164,7 +169,16 @@ data class ScheduledDeparture(
     val description: String? = null,
     val contingencyAtEpochMillis: Long? = null,
     val contingencyFinalAtEpochMillis: Long? = null,
+    val originKind: RouteOriginKind? = null,
+    val originVenueName: String? = null,
+    val originLatitude: Double? = null,
+    val originLongitude: Double? = null,
+    val shortfallMinutes: Int = 0,
+    val unpinnedPreviousVenueName: String? = null,
 ) {
+    /** The artist leaves for this event straight from the previous one. */
+    val isChained: Boolean get() = originKind == RouteOriginKind.PREVIOUS_EVENT
+
     val hasCoordinates: Boolean get() = latitude != null && longitude != null
 }
 

@@ -152,6 +152,15 @@ fun GroqSettingsCard(
                 }
             }
 
+            if (groqAiSettings.keyNeedsReentry) {
+                Text(
+                    text = stringResource(R.string.settings_groq_key_unreadable),
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = colors.dangerText,
+                    modifier = Modifier.testTag("settings_groq_key_unreadable"),
+                )
+            }
+
             // Saved key indicator
             if (groqAiSettings.hasUserApiKey && !groqAiSettings.maskedKeyPreview.isNullOrBlank()) {
                 Surface(

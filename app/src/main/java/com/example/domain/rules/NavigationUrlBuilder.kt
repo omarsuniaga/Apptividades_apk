@@ -15,13 +15,21 @@ object NavigationUrlBuilder {
         venueName: String?,
         latitude: Double?,
         longitude: Double?,
+        originLatitude: Double? = null,
+        originLongitude: Double? = null,
     ): String? {
         val destination = when {
             isValidCoordinates(latitude, longitude) -> formatCoords(latitude!!, longitude!!)
             !venueName.isNullOrBlank() -> encodeQuery(venueName.trim())
             else -> return null
         }
-        return "https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving"
+        // Without an origin parameter Google Maps starts from the phone's location.
+        val origin = if (isValidCoordinates(originLatitude, originLongitude)) {
+            "&origin=${formatCoords(originLatitude!!, originLongitude!!)}"
+        } else {
+            ""
+        }
+        return "https://www.google.com/maps/dir/?api=1$origin&destination=$destination&travelmode=driving"
     }
 
     fun wazeNavigationUrl(

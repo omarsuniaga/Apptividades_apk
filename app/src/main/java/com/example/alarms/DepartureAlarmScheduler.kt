@@ -20,7 +20,10 @@ import com.example.data.port.GeoPoint
 import com.example.data.port.MapsAndLocationPort
 import com.example.domain.model.Activity
 import com.example.domain.model.ActivityTimelineOverride
+import com.example.data.EventRouteResolver
 import com.example.domain.model.CachedActivityRoute
+import com.example.domain.rules.EventChainPlanner
+import com.example.domain.rules.RouteOriginKind
 import com.example.domain.model.LabSettings
 import com.example.domain.model.SANTO_DOMINGO_ZONE
 import com.example.domain.model.ScheduledDeparture
@@ -38,6 +41,8 @@ class DepartureAlarmScheduler(
     private val sessionDataStore: SessionDataStore,
     private val mapsAndLocationPort: MapsAndLocationPort,
 ) : DepartureAlarmPort {
+
+    private val routeResolver = EventRouteResolver(mapsAndLocationPort)
 
     private val alarmManager: AlarmManager?
         get() = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
@@ -119,8 +124,6 @@ class DepartureAlarmScheduler(
         val timingOverrides = sessionDataStore.loadActivityTimings()
         val nextMap = linkedMapOf<String, ScheduledDeparture>()
 
-        val origin = resolveOrigin(settings)
-
         // Include ALL upcoming activities with an eventTime (even manual-address gigs without map pins)
         val candidates = activities.filter { act ->
             act.eventTime != null &&
@@ -163,52 +166,25 @@ class DepartureAlarmScheduler(
             val hoursUntilEvent = (eventStartMillis - nowMillis) / (1000.0 * 3600.0)
             val override = timingOverrides[act.id]
 
-            val resolvedRoute: CachedActivityRoute? = if (destLat != null && destLng != null) {
-                val existingCached = cachedRoutes[act.id]?.takeIf {
-                    it.matchesCoordinates(origin.latitude, origin.longitude, destLat, destLng)
-                }
-                when {
-                    !forceRecalculateRoutes && existingCached != null && existingCached.fromOsrm -> existingCached
-                    else -> {
-                        val osrm = mapsAndLocationPort.computeRouteEstimate(
-                            origin = origin,
-                            destination = GeoPoint(destLat, destLng),
-                        ).getOrNull()
-                        if (osrm != null) {
-                            val fresh = CachedActivityRoute(
-                                activityId = act.id,
-                                originLat = origin.latitude,
-                                originLng = origin.longitude,
-                                destLat = destLat,
-                                destLng = destLng,
-                                travelMinutes = osrm.travelMinutes,
-                                distanceKm = osrm.distanceKm,
-                                fromOsrm = true,
-                            )
-                            cachedRoutes[act.id] = fresh
-                            routesChanged = true
-                            fresh
-                        } else {
-                            existingCached
-                        }
-                    }
-                }
-            } else {
-                null
+            val resolvedRoute = routeResolver.resolve(
+                target = act,
+                activities = activities,
+                settings = settings,
+                overrides = timingOverrides,
+                cached = cachedRoutes[act.id],
+                forceRefresh = forceRecalculateRoutes,
+            )
+            // Offline estimates are saved too, so screens never show an outdated origin.
+            // They are not reused: the next sync asks for an online one again.
+            if (resolvedRoute != null && cachedRoutes[act.id] != resolvedRoute) {
+                cachedRoutes[act.id] = resolvedRoute
+                routesChanged = true
             }
 
-            val routeTravelMinutes: Int? = if (destLat != null && destLng != null) {
-                resolvedRoute?.travelMinutes ?: DepartureTimeCalculator.estimateOfflineTravelMinutes(
-                    origin.latitude,
-                    origin.longitude,
-                    destLat,
-                    destLng,
-                )
-            } else {
-                null
-            }
+            val routeTravelMinutes: Int? = resolvedRoute?.travelMinutes
             val isOsrmEstimated = resolvedRoute?.fromOsrm == true
             val distanceKm = resolvedRoute?.distanceKm
+            val isChained = resolvedRoute?.originKind == RouteOriginKind.PREVIOUS_EVENT
 
             val schedule = DepartureTimeCalculator.calculateFromTimeline(
                 eventDate = act.eventDate,
@@ -218,8 +194,13 @@ class DepartureAlarmScheduler(
                 override = override,
             )
 
-            val prepareAtMillis = schedule.prepareAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
             val leaveAtMillis = schedule.leaveAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
+            // Leaving from the previous event leaves nothing to prepare at home.
+            val prepareAtMillis = if (isChained) {
+                leaveAtMillis
+            } else {
+                schedule.prepareAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
+            }
             val (contingencyAtMillis, contingencyFinalAtMillis) = computeContingencyTimestamps(
                 eventStartMillis = eventStartMillis,
                 contingencyEnabled = settings.contingencyEnabled,
@@ -231,6 +212,8 @@ class DepartureAlarmScheduler(
                 previous.eventDate != act.eventDate ||
                 previous.eventTime != eventTime ||
                 previous.venueName != act.venueName ||
+                previous.originKind != resolvedRoute?.originKind ||
+                previous.originVenueName != resolvedRoute?.originVenueName ||
                 DepartureTimeCalculator.shouldReschedule(previous.leaveAtEpochMillis, leaveAtMillis) ||
                 DepartureTimeCalculator.shouldReschedule(previous.prepareAtEpochMillis, prepareAtMillis) ||
                 previous.contingencyAtEpochMillis != contingencyAtMillis ||
@@ -259,6 +242,12 @@ class DepartureAlarmScheduler(
                 alarmsScheduled = armedNow,
                 contingencyAtEpochMillis = contingencyAtMillis,
                 contingencyFinalAtEpochMillis = contingencyFinalAtMillis,
+                originKind = resolvedRoute?.originKind,
+                originVenueName = resolvedRoute?.originVenueName,
+                originLatitude = resolvedRoute?.originLat,
+                originLongitude = resolvedRoute?.originLng,
+                shortfallMinutes = resolvedRoute?.shortfallMinutes ?: 0,
+                unpinnedPreviousVenueName = resolvedRoute?.unpinnedPreviousVenueName,
             )
 
             // Schedule platform alarms for gigs within T-24h (and re-schedule on >=5 min shifts)
@@ -305,6 +294,29 @@ class DepartureAlarmScheduler(
         }
         sessionDataStore.saveScheduledDepartures(nextMap)
         scheduleNextDailySummary(nowZoned)
+
+        // Runs last: alarm receivers check the saved departures, so slow requests for events
+        // beyond the alarm horizon must not delay that save.
+        var farRoutesChanged = false
+        for (act in activities) {
+            if (!act.eventDate.isAfter(horizonDate)) continue
+            if (!EventRouteResolver.needsOriginRefresh(act, activities, cachedRoutes[act.id])) continue
+            val route = routeResolver.resolve(
+                target = act,
+                activities = activities,
+                settings = settings,
+                overrides = timingOverrides,
+                cached = cachedRoutes[act.id],
+                forceRefresh = false,
+            ) ?: continue
+            if (cachedRoutes[act.id] != route) {
+                cachedRoutes[act.id] = route
+                farRoutesChanged = true
+            }
+        }
+        if (farRoutesChanged) {
+            sessionDataStore.saveActivityRoutes(cachedRoutes)
+        }
     }
 
     override suspend fun cancelForActivity(activityId: String) {
@@ -418,54 +430,37 @@ class DepartureAlarmScheduler(
             return
         }
 
-        val origin = resolveOrigin(settings)
+        // The origin was chosen by the last full sync; this refresh only measures it again.
+        val storedOriginLat = entry.originLatitude
+        val storedOriginLng = entry.originLongitude
+        val origin = if (entry.isChained && storedOriginLat != null && storedOriginLng != null) {
+            GeoPoint(storedOriginLat, storedOriginLng)
+        } else {
+            resolveOrigin(settings)
+        }
         val destLat = entry.latitude
         val destLng = entry.longitude
 
         val resolvedRoute = if (destLat != null && destLng != null) {
             val cachedRoutes = sessionDataStore.loadActivityRoutes().toMutableMap()
-            val existingCached = cachedRoutes[activityId]?.takeIf {
-                it.fromOsrm && it.matchesCoordinates(origin.latitude, origin.longitude, destLat, destLng)
+            val measured = routeResolver
+                .measure(activityId, origin, GeoPoint(destLat, destLng), cachedRoutes[activityId])
+                .copy(
+                    originKind = entry.originKind,
+                    originVenueName = entry.originVenueName,
+                    shortfallMinutes = entry.shortfallMinutes,
+                    unpinnedPreviousVenueName = entry.unpinnedPreviousVenueName,
+                )
+            if (cachedRoutes[activityId] != measured) {
+                cachedRoutes[activityId] = measured
+                sessionDataStore.saveActivityRoutes(cachedRoutes)
             }
-            if (existingCached != null) {
-                existingCached
-            } else {
-                val osrm = mapsAndLocationPort.computeRouteEstimate(
-                    origin = origin,
-                    destination = GeoPoint(destLat, destLng),
-                ).getOrNull()
-                if (osrm != null) {
-                    val fresh = CachedActivityRoute(
-                        activityId = activityId,
-                        originLat = origin.latitude,
-                        originLng = origin.longitude,
-                        destLat = destLat,
-                        destLng = destLng,
-                        travelMinutes = osrm.travelMinutes,
-                        distanceKm = osrm.distanceKm,
-                        fromOsrm = true,
-                    )
-                    cachedRoutes[activityId] = fresh
-                    sessionDataStore.saveActivityRoutes(cachedRoutes)
-                    fresh
-                } else {
-                    null
-                }
-            }
+            measured
         } else {
             null
         }
 
-        val routeTravelMinutes: Int? = if (destLat != null && destLng != null) {
-            resolvedRoute?.travelMinutes ?: DepartureTimeCalculator.estimateOfflineTravelMinutes(
-                origin.latitude,
-                origin.longitude,
-                destLat,
-                destLng,
-            )
-        } else {
-            null
-        }
+        val routeTravelMinutes: Int? = resolvedRoute?.travelMinutes
         val isOsrm = resolvedRoute?.fromOsrm == true
         val distanceKm = resolvedRoute?.distanceKm ?: entry.distanceKm
 
@@ -476,8 +471,12 @@ class DepartureAlarmScheduler(
             settings = settings,
             override = override,
         )
-        val newPrepareMillis = schedule.prepareAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
         val newLeaveMillis = schedule.leaveAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
+        val newPrepareMillis = if (entry.isChained) {
+            newLeaveMillis
+        } else {
+            schedule.prepareAt.atZone(SANTO_DOMINGO_ZONE).toInstant().toEpochMilli()
+        }
         val (contingencyAtMillis, contingencyFinalAtMillis) = computeContingencyTimestamps(
             eventStartMillis = eventStartMillis,
             contingencyEnabled = settings.contingencyEnabled,
@@ -591,14 +590,13 @@ class DepartureAlarmScheduler(
 
     private suspend fun resolveOrigin(settings: LabSettings): GeoPoint {
         val current = runCatching { mapsAndLocationPort.getLastKnownOrCurrentLocation() }.getOrNull()
-        if (current != null) return current
-        if (settings.homeLatitude != null && settings.homeLongitude != null) {
-            return GeoPoint(settings.homeLatitude, settings.homeLongitude)
-        }
-        return GeoPoint(
-            DepartureTimeCalculator.DEFAULT_BAVARO_LAT,
-            DepartureTimeCalculator.DEFAULT_BAVARO_LNG,
+        val origin = EventChainPlanner.fallbackOrigin(
+            homeLatitude = settings.homeLatitude,
+            homeLongitude = settings.homeLongitude,
+            currentLatitude = current?.latitude,
+            currentLongitude = current?.longitude,
         )
+        return GeoPoint(origin.latitude, origin.longitude)
     }
 
     private fun schedulePlatformAlarmsFor(
@@ -615,7 +613,11 @@ class DepartureAlarmScheduler(
         )
         val arrivalLabel = DominicanFormatter.formatTime24(entry.estimatedArrivalTime)
 
-        if (prepareDelay > 0L) {
+        if (entry.isChained) {
+            // Drop any home preparation alarm armed before this event became chained.
+            cancelDepartureAlarmsOnly(entry.activityId)
+        }
+        if (prepareDelay > 0L && !entry.isChained) {
             scheduleSingleAlarm(
                 activityId = entry.activityId,
                 alarmType = ALARM_TYPE_PREPARE,

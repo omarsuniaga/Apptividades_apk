@@ -471,6 +471,8 @@ fun NavigationActionButtons(
     longitude: Double?,
     idTag: String,
     modifier: Modifier = Modifier,
+    originLatitude: Double? = null,
+    originLongitude: Double? = null,
 ) {
     val hasDestination = (latitude != null && longitude != null) || !venueName.isNullOrBlank()
     if (!hasDestination) return
@@ -490,6 +492,8 @@ fun NavigationActionButtons(
                     venueName = venueName,
                     latitude = latitude,
                     longitude = longitude,
+                    originLatitude = originLatitude,
+                    originLongitude = originLongitude,
                 )
             },
             shape = RoundedCornerShape(10.dp),

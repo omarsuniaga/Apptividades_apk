@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import com.example.ui.components.routeSummaryText
+import com.example.ui.components.RouteWarnings
+import com.example.domain.rules.RouteOriginKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -209,14 +212,16 @@ fun ActivityFormScreen(
             isEstimatingRoute = false
             return@LaunchedEffect
         }
-        val existing = cachedRoute
+        // A saved activity is always asked again: its origin depends on the other events of
+        // the day. The resolver answers from the cache when nothing changed.
+        val existing = cachedRoute.takeIf { existingActivity == null }
         if (existing != null &&
             kotlin.math.abs(existing.destLat - lat) < 0.0005 &&
             kotlin.math.abs(existing.destLng - lng) < 0.0005
         ) {
             return@LaunchedEffect
         }
-        isEstimatingRoute = true
+        isEstimatingRoute = cachedRoute == null
         val estimated = runCatching { onEstimateRoute(lat, lng, existingActivity?.id) }.getOrNull()
         isEstimatingRoute = false
         if (estimated != null) {
@@ -857,18 +862,12 @@ fun ActivityFormScreen(
                         }
                     } else if (cachedRoute != null) {
                         val route = cachedRoute!!
-                        val routeLabel = if (route.distanceKm != null) {
-                            stringResource(
-                                R.string.departure_osrm_distance_time,
-                                DominicanFormatter.formatOneDecimal(route.distanceKm),
-                                route.travelMinutes,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.departure_osrm_time_only,
-                                route.travelMinutes,
-                            )
-                        }
+                        val routeLabel = routeSummaryText(
+                            distanceKm = route.distanceKm,
+                            travelMinutes = route.travelMinutes,
+                            originKind = route.originKind,
+                            originVenueName = route.originVenueName,
+                        )
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = colors.neutralChipBg,
@@ -884,8 +883,13 @@ fun ActivityFormScreen(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             )
                         }
+                        RouteWarnings(
+                            shortfallMinutes = route.shortfallMinutes,
+                            unpinnedPreviousVenueName = route.unpinnedPreviousVenueName,
+                        )
                     }
 
+                    val chainedRoute = cachedRoute?.takeIf { it.originKind == RouteOriginKind.PREVIOUS_EVENT }
                     NavigationActionButtons(
                         venueName = listOfNotNull(
                             venueName.trim().ifBlank { null },
@@ -894,6 +898,8 @@ fun ActivityFormScreen(
                         latitude = latitude,
                         longitude = longitude,
                         idTag = "form_venue",
+                        originLatitude = chainedRoute?.originLat,
+                        originLongitude = chainedRoute?.originLng,
                     )
 
                     if (filteredSavedVenues.isNotEmpty() || filteredVenueSuggestions.isNotEmpty()) {
@@ -1203,6 +1209,9 @@ fun ActivityFormScreen(
                     settings = settings,
                     routeTravelMinutes = cachedRoute?.travelMinutes,
                     routeDistanceKm = cachedRoute?.distanceKm,
+                    chainedFromVenue = cachedRoute
+                        ?.takeIf { it.originKind == RouteOriginKind.PREVIOUS_EVENT }
+                        ?.originVenueName,
                     timingOverride = timingOverride,
                     onApplyActivityOverride = { updatedOverride ->
                         timingOverride = updatedOverride
