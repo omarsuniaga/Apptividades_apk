@@ -108,6 +108,9 @@ import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.QuoteFunnelViewModel
 import com.example.ui.viewmodel.CrmViewModel
 import com.example.ui.screens.CrmScreen
+import com.example.ui.screens.HotelSeasonScreen
+import com.example.domain.rules.HotelSeasonCalculator
+import com.example.domain.rules.HotelSeasonCsvExporter
 import com.example.domain.rules.HotelCrmCalculator
 import com.example.domain.rules.WhatsAppReminderBuilder
 import com.example.ui.screens.QuoteFunnelScreen
@@ -135,6 +138,7 @@ const val ROUTE_BRAND_PROFILE = "brand_profile"
 const val ROUTE_QUOTE_CREATOR = "quote_creator"
 const val ROUTE_QUOTE_FUNNEL = "quote_funnel"
 const val ROUTE_CRM = "crm"
+const val ROUTE_HOTEL_SEASON = "hotel_season"
 const val ROUTE_AI_ANALYTICS = "ai_analytics"
 
 private data class NotificationDeepLink(
@@ -1032,6 +1036,42 @@ private fun ApptividadesSignedInShell(
                     )
                 }
 
+                composable(ROUTE_HOTEL_SEASON) {
+                    val hotelSeasonReport = remember(
+                        dataState.activities,
+                        dataState.today,
+                        dataState.settings.defaultCurrency,
+                        dataState.privacyPreferences.convertMixedCurrencies,
+                        dataState.privacyPreferences.defaultUsdToDopRate,
+                        dataState.activityFinancialRecords,
+                    ) {
+                        HotelSeasonCalculator.build(
+                            activities = dataState.activities,
+                            today = dataState.today,
+                            defaultCurrency = dataState.settings.defaultCurrency,
+                            convertMixedCurrencies = dataState.privacyPreferences.convertMixedCurrencies,
+                            defaultUsdToDopRate = dataState.privacyPreferences.defaultUsdToDopRate,
+                            financialRecords = dataState.activityFinancialRecords,
+                        )
+                    }
+                    HotelSeasonScreen(
+                        report = hotelSeasonReport,
+                        onBack = { navController.popBackStack() },
+                        onExportCsv = {
+                            shareCsv(
+                                context = context,
+                                title = context.getString(R.string.hotelseason_title),
+                                csvContent = HotelSeasonCsvExporter.build(
+                                    hotelSeasonReport,
+                                    context.getString(R.string.hotelseason_no_place),
+                                ),
+                            )
+                        },
+                        onOpenCrm = { navController.navigate(ROUTE_CRM) },
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                    )
+                }
+
                 composable(ROUTE_CRM) {
                     val crmAccounts = remember(
                         dataState.activities,
@@ -1164,6 +1204,7 @@ private fun ApptividadesSignedInShell(
                 composable(ROUTE_REPORTS) {
                     ReportsScreen(
                         state = dataState,
+                        onOpenHotelSeason = { navController.navigate(ROUTE_HOTEL_SEASON) },
                         onBack = { navController.popBackStack() },
                         onPrevMonth = { viewModel.navigateReportsMonth(-1) },
                         onNextMonth = { viewModel.navigateReportsMonth(1) },
