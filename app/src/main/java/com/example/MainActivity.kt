@@ -106,6 +106,10 @@ import com.example.ui.theme.SurfaceWhite
 import com.example.ui.viewmodel.AuthUiState
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.viewmodel.QuoteFunnelViewModel
+import com.example.ui.viewmodel.CrmViewModel
+import com.example.ui.screens.CrmScreen
+import com.example.domain.rules.HotelCrmCalculator
+import com.example.domain.rules.WhatsAppReminderBuilder
 import com.example.ui.screens.QuoteFunnelScreen
 import com.example.domain.rules.QuoteFunnelCalculator
 import kotlinx.coroutines.Dispatchers
@@ -130,6 +134,7 @@ const val ROUTE_LOGIN_HISTORY = "login_history"
 const val ROUTE_BRAND_PROFILE = "brand_profile"
 const val ROUTE_QUOTE_CREATOR = "quote_creator"
 const val ROUTE_QUOTE_FUNNEL = "quote_funnel"
+const val ROUTE_CRM = "crm"
 const val ROUTE_AI_ANALYTICS = "ai_analytics"
 
 private data class NotificationDeepLink(
@@ -192,6 +197,12 @@ class MainActivity : ComponentActivity() {
                     manager = appContainer.quoteFunnelManager,
                 )
             )
+            val crmVm: CrmViewModel = viewModel(
+                factory = CrmViewModel.Factory(
+                    port = appContainer.crmPort,
+                    manager = appContainer.crmManager,
+                )
+            )
             val dataStateForWindow by vm.dataState.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()
             val isDarkTheme = when (dataStateForWindow.privacyPreferences.themeMode) {
@@ -234,6 +245,7 @@ class MainActivity : ComponentActivity() {
                 ApptividadesRoot(
                     viewModel = vm,
                     funnelViewModel = funnelVm,
+                    crmViewModel = crmVm,
                     pendingDeepLink = deepLink,
                     onConsumeDeepLink = { _pendingDeepLink.value = null },
                 )
@@ -278,6 +290,7 @@ private sealed interface FormOverlayState {
 private fun ApptividadesRoot(
     viewModel: MainViewModel,
     funnelViewModel: QuoteFunnelViewModel,
+    crmViewModel: CrmViewModel,
     pendingDeepLink: NotificationDeepLink?,
     onConsumeDeepLink: () -> Unit,
 ) {
@@ -398,6 +411,7 @@ private fun ApptividadesRoot(
                     userEmail = auth.session.email,
                     viewModel = viewModel,
                     funnelViewModel = funnelViewModel,
+                    crmViewModel = crmViewModel,
                     pendingDeepLink = pendingDeepLink,
                     onConsumeDeepLink = onConsumeDeepLink,
                     onToggleAppLock = { enable, onUnavailable ->
@@ -447,12 +461,15 @@ private fun ApptividadesSignedInShell(
     userEmail: String,
     viewModel: MainViewModel,
     funnelViewModel: QuoteFunnelViewModel,
+    crmViewModel: CrmViewModel,
     pendingDeepLink: NotificationDeepLink?,
     onConsumeDeepLink: () -> Unit,
     onToggleAppLock: (enable: Boolean, onUnavailable: (String) -> Unit) -> Unit,
 ) {
     val dataState by viewModel.dataState.collectAsStateWithLifecycle()
     val savedQuotes by funnelViewModel.quotes.collectAsStateWithLifecycle()
+    val crmProfiles by crmViewModel.profiles.collectAsStateWithLifecycle()
+    val crmContacts by crmViewModel.contacts.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: ROUTE_INICIO
@@ -630,6 +647,8 @@ private fun ApptividadesSignedInShell(
                 navigateToTab(targetTab)
             } else if (link.openTab == ROUTE_QUOTE_FUNNEL) {
                 navController.navigate(ROUTE_QUOTE_FUNNEL)
+            } else if (link.openTab == ROUTE_CRM) {
+                navController.navigate(ROUTE_CRM)
             }
             onConsumeDeepLink()
             return@LaunchedEffect
@@ -700,6 +719,7 @@ private fun ApptividadesSignedInShell(
                         onSetContingencyUnderControl = viewModel::setContingencyUnderControl,
                         onOpenQuoteCreator = { navController.navigate(ROUTE_QUOTE_CREATOR) },
                         onOpenQuoteFunnel = { navController.navigate(ROUTE_QUOTE_FUNNEL) },
+                        onOpenCrm = { navController.navigate(ROUTE_CRM) },
                         onOpenAiAnalyst = { navController.navigate(ROUTE_AI_ANALYTICS) },
                         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                     )
@@ -911,6 +931,7 @@ private fun ApptividadesSignedInShell(
                                     BrandAssetStorage.clearAllBrandAssets(context)
                                     PdfStatementSharer.cleanupAllCachedStatements(context)
                                     funnelViewModel.deleteAll()
+                                    crmViewModel.deleteAll()
                                 }
                                 onResult(res)
                             }
@@ -1008,6 +1029,51 @@ private fun ApptividadesSignedInShell(
                                 }
                             }
                         },
+                    )
+                }
+
+                composable(ROUTE_CRM) {
+                    val crmAccounts = remember(
+                        dataState.activities,
+                        dataState.suppliers,
+                        savedQuotes,
+                        crmProfiles,
+                        crmContacts,
+                        dataState.today,
+                    ) {
+                        HotelCrmCalculator.buildAccounts(
+                            activities = dataState.activities,
+                            suppliers = dataState.suppliers,
+                            quotes = savedQuotes,
+                            profiles = crmProfiles,
+                            contacts = crmContacts,
+                            today = dataState.today,
+                        )
+                    }
+                    CrmScreen(
+                        accounts = crmAccounts,
+                        today = dataState.today,
+                        issuerName = dataState.brandProfile.artistName.trim().ifBlank { userDisplayName ?: "Omar" },
+                        onBack = { navController.popBackStack() },
+                        onSendWhatsApp = { account, message ->
+                            val opened = openWhatsApp(context, account.phone, message)
+                            if (!opened) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(context.getString(R.string.crm_whatsapp_no_phone))
+                                }
+                            }
+                        },
+                        onLogContact = { account, channel, note, date, next ->
+                            crmViewModel.logContact(account, channel, note, date, next)
+                        },
+                        onSaveDetails = { account, person, role, phone, email, notes ->
+                            crmViewModel.updateDetails(account, person, role, phone, email, notes)
+                        },
+                        onSetNextContact = { account, date -> crmViewModel.setNextContact(account, date) },
+                        onAddProspect = { type, name -> crmViewModel.addProspect(type, name) },
+                        onDeleteContact = { contact -> crmViewModel.deleteContact(contact.id) },
+                        onDeleteAccountData = { account -> crmViewModel.deleteAccountData(account.accountKey) },
+                        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                     )
                 }
 
@@ -1429,6 +1495,30 @@ private fun PdfBrandAssets.recycleSafely() {
     runCatching {
         if (signatureBitmap != null && !signatureBitmap.isRecycled) signatureBitmap.recycle()
     }
+}
+
+/**
+ * Opens WhatsApp with [message] pre-filled. With a known phone it opens that chat; without one the
+ * message is handed to WhatsApp (or the system share sheet) so the user picks the contact.
+ * Returns false when the phone is unknown and WhatsApp had to ask for the contact.
+ */
+private fun openWhatsApp(context: Context, rawPhone: String?, message: String): Boolean {
+    val url = WhatsAppReminderBuilder.buildWaMeUrl(rawPhone, message)
+    if (url != null) {
+        val opened = runCatching {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.isSuccess
+        if (opened) return true
+    }
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, message)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    runCatching { context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    return url != null
 }
 
 private fun requestPinNextGigWidget(context: Context): Boolean {
