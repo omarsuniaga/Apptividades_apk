@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Hotel
 import androidx.compose.material.icons.outlined.RequestQuote
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
@@ -65,6 +66,7 @@ fun ReportsScreen(
     onExport12MonthsCsv: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenQuoteCreator: () -> Unit = {},
+    onOpenHotelSeason: () -> Unit = {},
     onOpenAiAnalyst: () -> Unit = {},
 ) {
     val colors = ApptividadesThemeDefaults.colors
@@ -247,6 +249,62 @@ fun ReportsScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // Income by hotel and season
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = colors.surface,
+                    border = BorderStroke(1.dp, colors.line),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("reports_hotel_season_card"),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Hotel,
+                                contentDescription = null,
+                                tint = colors.accentHover,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.hotelseason_card_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = colors.ink,
+                                )
+                                Text(
+                                    text = stringResource(R.string.hotelseason_card_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.muted,
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = onOpenHotelSeason,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.ink,
+                                contentColor = colors.surface,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("reports_hotel_season_button"),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.hotelseason_card_cta),
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
                 }
