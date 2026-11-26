@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Campaign
+import androidx.compose.material.icons.outlined.Hotel
 import androidx.compose.material.icons.outlined.RequestQuote
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -116,6 +117,7 @@ fun InicioScreen(
     onSetContingencyUnderControl: (String, Boolean) -> Unit = { _, _ -> },
     onOpenQuoteCreator: () -> Unit = {},
     onOpenQuoteFunnel: () -> Unit = {},
+    onOpenCrm: () -> Unit = {},
     onOpenAiAnalyst: () -> Unit = {},
 ) {
     val colors = ApptividadesThemeDefaults.colors
@@ -332,6 +334,27 @@ fun InicioScreen(
                                         onOpenQuoteFunnel()
                                     },
                                     modifier = Modifier.testTag("inicio_menu_quote_funnel"),
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = stringResource(R.string.nav_crm),
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                            color = colors.ink,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Hotel,
+                                            contentDescription = null,
+                                            tint = colors.accentHover,
+                                        )
+                                    },
+                                    onClick = {
+                                        showQuickMenu = false
+                                        onOpenCrm()
+                                    },
+                                    modifier = Modifier.testTag("inicio_menu_crm"),
                                 )
                                 DropdownMenuItem(
                                     text = {

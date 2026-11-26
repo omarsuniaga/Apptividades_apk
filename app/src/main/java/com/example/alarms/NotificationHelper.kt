@@ -25,6 +25,7 @@ object NotificationHelper {
     const val CHANNEL_SCORES = "apptividades_scores"
     const val CHANNEL_SUMMARY = "apptividades_summary"
     const val CHANNEL_QUOTES = "apptividades_quotes"
+    const val CHANNEL_CRM = "apptividades_crm"
 
     const val EXTRA_OPEN_TAB = "extra_open_tab"
     const val EXTRA_QUICK_MESSAGE_ACTIVITY_ID = "extra_quick_message_activity_id"
@@ -101,8 +102,18 @@ object NotificationHelper {
             lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
         }
 
+        val crmChannel = NotificationChannel(
+            CHANNEL_CRM,
+            context.getString(R.string.channel_crm_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = context.getString(R.string.channel_crm_desc)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PRIVATE
+        }
+
         manager.createNotificationChannels(
             listOf(
+                crmChannel,
                 quotesChannel,
                 departureChannel,
                 contingencyChannel,
@@ -404,6 +415,47 @@ object NotificationHelper {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(notificationId(quoteId, 8003), notification)
+        }
+    }
+
+    /** "Time to contact this hotel/client" reminder. The name is hidden on the lock screen. */
+    fun postCrmFollowUpNotification(
+        context: Context,
+        accountKey: String,
+        displayName: String,
+    ) {
+        if (!hasNotificationPermission(context)) return
+        ensureChannels(context)
+
+        val openCrmIntent = openAppPendingIntent(
+            context = context,
+            requestCode = 8004,
+            openTabRoute = com.example.ROUTE_CRM,
+        )
+        val body = context.getString(R.string.notif_crm_followup_body, displayName)
+        val publicNotification = NotificationCompat.Builder(context, CHANNEL_CRM)
+            .setSmallIcon(R.drawable.ic_notif_alarm)
+            .setContentTitle(context.getString(R.string.notif_crm_followup_title))
+            .setContentText(context.getString(R.string.notif_crm_followup_public_body))
+            .setAutoCancel(true)
+            .setContentIntent(openCrmIntent)
+            .build()
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_CRM)
+            .setSmallIcon(R.drawable.ic_notif_alarm)
+            .setContentTitle(context.getString(R.string.notif_crm_followup_title))
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicNotification)
+            .setAutoCancel(true)
+            .setContentIntent(openCrmIntent)
+            .build()
+
+        runCatching {
+            NotificationManagerCompat.from(context).notify(notificationId(accountKey, 8004), notification)
         }
     }
 

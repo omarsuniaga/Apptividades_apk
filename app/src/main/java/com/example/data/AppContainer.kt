@@ -156,6 +156,16 @@ class AppContainer(context: Context) {
 
     val quoteFunnelManager: QuoteFunnelManager = QuoteFunnelManager(quoteFunnelPort, quoteFollowUpPort)
 
+    val crmPort: com.example.data.port.CrmPort =
+        com.example.data.local.crm.RoomCrmRepository(
+            com.example.data.local.crm.CrmDatabase.getInstance(appContext).crmDao(),
+        )
+
+    val crmFollowUpPort: com.example.data.port.CrmFollowUpPort =
+        com.example.alarms.CrmFollowUpScheduler(appContext)
+
+    val crmManager: CrmManager = CrmManager(crmPort, crmFollowUpPort)
+
     val activityFinancePort: ActivityFinancePort = ActivityFinanceStore(
         context = appContext,
         moshi = moshi,
