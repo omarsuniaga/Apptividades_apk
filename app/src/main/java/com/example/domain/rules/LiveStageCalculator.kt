@@ -136,9 +136,9 @@ object LiveStageCalculator {
                     eventDate = act.eventDate,
                     eventTime = act.eventTime!!,
                     settings = settings,
-                    routeTravelMinutes = route?.travelMinutes,
+                    routeTravelMinutes = route?.effectiveDriveMinutes,
                     routeDistanceKm = route?.distanceKm,
-                    override = timings[act.id],
+                    override = route.timingOverride(timings[act.id]),
                 )
                 FeaturedLiveActivity(
                     activity = act,

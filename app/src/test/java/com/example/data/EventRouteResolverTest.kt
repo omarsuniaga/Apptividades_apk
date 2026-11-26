@@ -176,6 +176,28 @@ class EventRouteResolverTest {
     }
 
     @Test
+    fun `the chain and the shortfall use the tracked times of the destination`() {
+        val tracked = com.example.domain.rules.TrackedRoute(
+            venueKey = com.example.domain.rules.TrackedRoutes.venueKey(b.venueName),
+            walkMinutes = 60,
+            setupMinutes = 45,
+            marginMinutes = 30,
+            driveMinutesByOrigin = mapOf("venue:a" to 50),
+        )
+
+        val route = runBlocking {
+            EventRouteResolver(FakeMaps(null))
+                .resolve(b, listOf(a, b), settings, emptyMap(), null, false, mapOf(tracked.venueKey to tracked))
+        }!!
+
+        // B 19:30 minus 50 + 60 + 45 + 30 means leaving at 16:25; A is done at 18:00.
+        assertEquals(RouteOriginKind.PREVIOUS_EVENT, route.originKind)
+        assertEquals(50, route.trackedDriveMinutes)
+        assertEquals(20, route.travelMinutes)
+        assertEquals(95, route.shortfallMinutes)
+    }
+
+    @Test
     fun `a destination without a pin has no route`() {
         val route = runBlocking {
             EventRouteResolver(FakeMaps(null)).resolve(

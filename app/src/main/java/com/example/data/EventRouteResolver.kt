@@ -1,5 +1,10 @@
 package com.example.data
 
+import com.example.domain.rules.withTracked
+import com.example.domain.rules.timingOverride
+import com.example.domain.rules.effectiveDriveMinutes
+import com.example.domain.rules.TrackedRoutes
+import com.example.domain.rules.TrackedRoute
 import com.example.data.port.GeoPoint
 import com.example.data.port.MapsAndLocationPort
 import com.example.domain.model.Activity
@@ -25,10 +30,12 @@ class EventRouteResolver(private val maps: MapsAndLocationPort) {
         overrides: Map<String, ActivityTimelineOverride>,
         cached: CachedActivityRoute?,
         forceRefresh: Boolean,
+        trackedRoutes: Map<String, TrackedRoute> = emptyMap(),
     ): CachedActivityRoute? {
         val destLat = target.latitude ?: return null
         val destLng = target.longitude ?: return null
         val destination = GeoPoint(destLat, destLng)
+        val tracked = TrackedRoutes.find(trackedRoutes, target.venueName)
 
         var unpinnedPreviousVenueName: String? = null
         val previous = EventChainPlanner.previousSameDay(target, activities)
@@ -40,20 +47,23 @@ class EventRouteResolver(private val maps: MapsAndLocationPort) {
             } else {
                 null
             }
+            // The chain is decided with the same times the departure will use.
+            val candidate = fromPrevious
+                ?.copy(originKind = RouteOriginKind.PREVIOUS_EVENT, originVenueName = previous.venueName)
+                ?.withTracked(tracked)
+            val targetTiming = candidate.timingOverride(overrides[target.id])
             val decision = EventChainPlanner.plan(
                 target = target,
                 activities = activities,
                 settings = settings,
-                overrides = overrides,
-                travelMinutesFromPrevious = fromPrevious?.let {
-                    overrides[target.id]?.travelMinutes ?: it.travelMinutes
+                overrides = if (targetTiming == null) overrides else overrides + (target.id to targetTiming),
+                travelMinutesFromPrevious = candidate?.let {
+                    targetTiming?.travelMinutes ?: it.effectiveDriveMinutes
                 },
             )
             when {
-                decision is ChainDecision.Chained && fromPrevious != null ->
-                    return fromPrevious.copy(
-                        originKind = RouteOriginKind.PREVIOUS_EVENT,
-                        originVenueName = previous.venueName,
+                decision is ChainDecision.Chained && candidate != null ->
+                    return candidate.copy(
                         shortfallMinutes = decision.shortfallMinutes,
                         unpinnedPreviousVenueName = null,
                     )
@@ -80,6 +90,7 @@ class EventRouteResolver(private val maps: MapsAndLocationPort) {
                 shortfallMinutes = 0,
                 unpinnedPreviousVenueName = unpinnedPreviousVenueName,
             )
+            .withTracked(tracked)
     }
 
     /** OSRM estimate with a cache hit when possible and an offline estimate as last resort. */
@@ -128,8 +139,11 @@ class EventRouteResolver(private val maps: MapsAndLocationPort) {
             target: Activity,
             activities: List<Activity>,
             cached: CachedActivityRoute?,
+            trackedRoutes: Map<String, TrackedRoute> = emptyMap(),
         ): Boolean = target.hasCoordinates && (
             cached?.originKind == RouteOriginKind.PREVIOUS_EVENT ||
+                cached?.trackedMarginMinutes != null ||
+                TrackedRoutes.find(trackedRoutes, target.venueName) != null ||
                 EventChainPlanner.previousSameDay(target, activities) != null
             )
     }

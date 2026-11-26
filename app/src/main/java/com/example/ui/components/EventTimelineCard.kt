@@ -84,6 +84,7 @@ fun EventTimelineCard(
     onSaveDefaultSettings: (LabSettings) -> Unit,
     modifier: Modifier = Modifier,
     chainedFromVenue: String? = null,
+    displayOverride: ActivityTimelineOverride? = timingOverride,
 ) {
     val colors = ApptividadesThemeDefaults.colors
     var showAdjustDialog by remember { mutableStateOf(false) }
@@ -174,7 +175,7 @@ fun EventTimelineCard(
                     settings,
                     routeTravelMinutes,
                     routeDistanceKm,
-                    timingOverride,
+                    displayOverride,
                 ) {
                     EventTimelineCalculator.calculate(
                         eventDate = eventDate,
@@ -182,7 +183,7 @@ fun EventTimelineCard(
                         settings = settings,
                         routeTravelMinutes = routeTravelMinutes,
                         routeDistanceKm = routeDistanceKm,
-                        override = timingOverride,
+                        override = displayOverride,
                     )
                 }
 

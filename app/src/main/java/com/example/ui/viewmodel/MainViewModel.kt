@@ -1,5 +1,6 @@
 package com.example.ui.viewmodel
 
+import com.example.domain.rules.TrackedRoute
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -118,6 +119,7 @@ data class AppDataState(
     val scheduledDepartures: Map<String, ScheduledDeparture> = emptyMap(),
     val activityRoutes: Map<String, CachedActivityRoute> = emptyMap(),
     val activityTimings: Map<String, ActivityTimelineOverride> = emptyMap(),
+    val trackedRoutes: Map<String, TrackedRoute> = emptyMap(),
     val activityFinancialRecords: Map<String, ActivityFinancialRecord> = emptyMap(),
     val contingencyUnderControlIds: Set<String> = emptySet(),
     val privacyPreferences: PrivacyPreferences = PrivacyPreferences(),
@@ -314,6 +316,11 @@ class MainViewModel(
         viewModelScope.launch {
             departureAlarmPort.observeActivityTimings().collect { timings ->
                 _dataState.update { it.copy(activityTimings = timings) }
+            }
+        }
+        viewModelScope.launch {
+            departureAlarmPort.observeTrackedRoutes().collect { routes ->
+                _dataState.update { it.copy(trackedRoutes = routes) }
             }
         }
         viewModelScope.launch {
@@ -697,6 +704,7 @@ class MainViewModel(
             runCatching { activityFinancePort?.clearAll() }
             runCatching { brandProfilePort?.clearBrandProfile() }
             runCatching { groqAiPort?.clearApiKey() }
+            runCatching { departureAlarmPort.clearTrackedRoutes() }
             runCatching { loginHistoryRepository?.clearHistory() }
             runCatching { widgetSyncPort?.clearNextGigWidget() }
             authRepository.signOut()
@@ -1057,6 +1065,27 @@ class MainViewModel(
                 refreshAll(ownerId)
             }
             onResult(updatedIdsResult.map { Unit })
+        }
+    }
+
+    fun saveTrackedRoute(venueKey: String, route: TrackedRoute?) {
+        viewModelScope.launch {
+            departureAlarmPort.saveTrackedRoute(venueKey, route)
+            val state = _dataState.value
+            syncDeparturesInternal(
+                activities = state.activities,
+                settings = state.settings,
+                forceRecalculateRoutes = false,
+            )
+            _dataState.update {
+                it.copy(
+                    snackbarMessage = if (route == null) {
+                        "Se quitó tu ruta. Se usa de nuevo el cálculo del mapa."
+                    } else {
+                        "Tu ruta quedó guardada y las alarmas se actualizaron."
+                    }
+                )
+            }
         }
     }
 
@@ -1482,6 +1511,7 @@ class MainViewModel(
                 overrides = state.activityTimings,
                 cached = state.activityRoutes[existing.id],
                 forceRefresh = false,
+                trackedRoutes = state.trackedRoutes,
             )?.let { return it }
         }
 

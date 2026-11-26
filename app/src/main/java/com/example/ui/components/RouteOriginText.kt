@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import com.example.domain.model.SANTO_DOMINGO_ZONE
+import java.time.Instant
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,11 +19,19 @@ fun routeSummaryText(
     travelMinutes: Int,
     originKind: RouteOriginKind?,
     originVenueName: String?,
+    isTrackedDrive: Boolean = false,
 ): String {
     val measure = if (distanceKm != null) {
-        stringResource(R.string.route_distance_time, DominicanFormatter.formatOneDecimal(distanceKm), travelMinutes)
+        stringResource(
+            if (isTrackedDrive) R.string.route_distance_tracked else R.string.route_distance_time,
+            DominicanFormatter.formatOneDecimal(distanceKm),
+            travelMinutes,
+        )
     } else {
-        stringResource(R.string.route_time_only, travelMinutes)
+        stringResource(
+            if (isTrackedDrive) R.string.route_time_tracked else R.string.route_time_only,
+            travelMinutes,
+        )
     }
     val origin = when (originKind) {
         RouteOriginKind.PREVIOUS_EVENT -> stringResource(R.string.route_from_venue, originVenueName.orEmpty())
@@ -54,4 +64,14 @@ fun RouteWarnings(
             color = colors.dangerText,
         )
     }
+}
+
+/** Appends the latest possible departure when the artist has a tracked route. */
+@Composable
+fun withLatestLeave(headline: String, latestLeaveAtEpochMillis: Long?): String {
+    if (latestLeaveAtEpochMillis == null) return headline
+    val latest = Instant.ofEpochMilli(latestLeaveAtEpochMillis)
+        .atZone(SANTO_DOMINGO_ZONE)
+        .toLocalTime()
+    return stringResource(R.string.route_latest_leave, headline, DominicanFormatter.formatTime12h(latest))
 }

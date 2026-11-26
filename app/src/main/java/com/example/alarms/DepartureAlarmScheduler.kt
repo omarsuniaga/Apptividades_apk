@@ -1,5 +1,10 @@
 package com.example.alarms
 
+import com.example.domain.rules.withTracked
+import com.example.domain.rules.timingOverride
+import com.example.domain.rules.effectiveDriveMinutes
+import com.example.domain.rules.TrackedRoutes
+import com.example.domain.rules.TrackedRoute
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -58,6 +63,17 @@ class DepartureAlarmScheduler(
 
     override fun observeActivityTimings(): Flow<Map<String, ActivityTimelineOverride>> =
         sessionDataStore.observeActivityTimings()
+
+    override fun observeTrackedRoutes(): Flow<Map<String, TrackedRoute>> =
+        sessionDataStore.observeTrackedRoutes()
+
+    override suspend fun saveTrackedRoute(venueKey: String, route: TrackedRoute?) {
+        sessionDataStore.saveTrackedRoute(venueKey, route)
+    }
+
+    override suspend fun clearTrackedRoutes() {
+        sessionDataStore.clearTrackedRoutes()
+    }
 
     override fun observeContingencyUnderControlIds(): Flow<Set<String>> =
         sessionDataStore.observeContingencyUnderControlIds()
@@ -122,6 +138,7 @@ class DepartureAlarmScheduler(
         val previousMap = sessionDataStore.loadScheduledDepartures()
         val cachedRoutes = sessionDataStore.loadActivityRoutes().toMutableMap()
         val timingOverrides = sessionDataStore.loadActivityTimings()
+        val trackedRoutes = sessionDataStore.loadTrackedRoutes()
         val nextMap = linkedMapOf<String, ScheduledDeparture>()
 
         // Include ALL upcoming activities with an eventTime (even manual-address gigs without map pins)
@@ -164,8 +181,6 @@ class DepartureAlarmScheduler(
             }
 
             val hoursUntilEvent = (eventStartMillis - nowMillis) / (1000.0 * 3600.0)
-            val override = timingOverrides[act.id]
-
             val resolvedRoute = routeResolver.resolve(
                 target = act,
                 activities = activities,
@@ -173,7 +188,9 @@ class DepartureAlarmScheduler(
                 overrides = timingOverrides,
                 cached = cachedRoutes[act.id],
                 forceRefresh = forceRecalculateRoutes,
+                trackedRoutes = trackedRoutes,
             )
+            val override = resolvedRoute.timingOverride(timingOverrides[act.id])
             // Offline estimates are saved too, so screens never show an outdated origin.
             // They are not reused: the next sync asks for an online one again.
             if (resolvedRoute != null && cachedRoutes[act.id] != resolvedRoute) {
@@ -181,7 +198,7 @@ class DepartureAlarmScheduler(
                 routesChanged = true
             }
 
-            val routeTravelMinutes: Int? = resolvedRoute?.travelMinutes
+            val routeTravelMinutes: Int? = resolvedRoute?.effectiveDriveMinutes
             val isOsrmEstimated = resolvedRoute?.fromOsrm == true
             val distanceKm = resolvedRoute?.distanceKm
             val isChained = resolvedRoute?.originKind == RouteOriginKind.PREVIOUS_EVENT
@@ -248,6 +265,8 @@ class DepartureAlarmScheduler(
                 originLongitude = resolvedRoute?.originLng,
                 shortfallMinutes = resolvedRoute?.shortfallMinutes ?: 0,
                 unpinnedPreviousVenueName = resolvedRoute?.unpinnedPreviousVenueName,
+                isTrackedDrive = resolvedRoute?.trackedDriveMinutes != null,
+                latestLeaveAtEpochMillis = latestLeaveMillis(resolvedRoute, leaveAtMillis, override, settings),
             )
 
             // Schedule platform alarms for gigs within T-24h (and re-schedule on >=5 min shifts)
@@ -300,7 +319,9 @@ class DepartureAlarmScheduler(
         var farRoutesChanged = false
         for (act in activities) {
             if (!act.eventDate.isAfter(horizonDate)) continue
-            if (!EventRouteResolver.needsOriginRefresh(act, activities, cachedRoutes[act.id])) continue
+            if (!EventRouteResolver.needsOriginRefresh(act, activities, cachedRoutes[act.id], trackedRoutes)) {
+                continue
+            }
             val route = routeResolver.resolve(
                 target = act,
                 activities = activities,
@@ -308,6 +329,7 @@ class DepartureAlarmScheduler(
                 overrides = timingOverrides,
                 cached = cachedRoutes[act.id],
                 forceRefresh = false,
+                trackedRoutes = trackedRoutes,
             ) ?: continue
             if (cachedRoutes[act.id] != route) {
                 cachedRoutes[act.id] = route
@@ -417,7 +439,7 @@ class DepartureAlarmScheduler(
             contingencyEnabled = depPrefs.contingencyEnabled,
             contingencyLeadMinutes = depPrefs.contingencyLeadMinutes,
         )
-        val override = sessionDataStore.loadActivityTimings()[activityId]
+        val dayOverride = sessionDataStore.loadActivityTimings()[activityId]
         val isUnderControl = activityId in sessionDataStore.loadContingencyUnderControlIds()
 
         val nowZoned = ZonedDateTime.now(SANTO_DOMINGO_ZONE)
@@ -460,7 +482,11 @@ class DepartureAlarmScheduler(
             null
         }
 
-        val routeTravelMinutes: Int? = resolvedRoute?.travelMinutes
+        val savedRoute = resolvedRoute?.withTracked(
+            TrackedRoutes.find(sessionDataStore.loadTrackedRoutes(), entry.venueName)
+        )
+        val override = savedRoute.timingOverride(dayOverride)
+        val routeTravelMinutes: Int? = savedRoute?.effectiveDriveMinutes
         val isOsrm = resolvedRoute?.fromOsrm == true
         val distanceKm = resolvedRoute?.distanceKm ?: entry.distanceKm
 
@@ -490,6 +516,8 @@ class DepartureAlarmScheduler(
             leaveAtEpochMillis = newLeaveMillis,
             estimatedArrivalTime = schedule.estimatedArrivalAt.toLocalTime(),
             isOsrmEstimated = isOsrm,
+            isTrackedDrive = savedRoute?.trackedDriveMinutes != null,
+            latestLeaveAtEpochMillis = latestLeaveMillis(savedRoute, newLeaveMillis, override, settings),
             contingencyAtEpochMillis = contingencyAtMillis,
             contingencyFinalAtEpochMillis = contingencyFinalAtMillis,
         )
@@ -570,6 +598,18 @@ class DepartureAlarmScheduler(
                 workManager.enqueueUniqueWork(DAILY_SUMMARY_WORK_NAME, ExistingWorkPolicy.REPLACE, req)
             }
         }
+    }
+
+    /** Only a tracked route has a meaningful latest departure: the one without the margin. */
+    private fun latestLeaveMillis(
+        route: CachedActivityRoute?,
+        leaveAtMillis: Long,
+        override: ActivityTimelineOverride?,
+        settings: LabSettings,
+    ): Long? {
+        if (route?.trackedMarginMinutes == null) return null
+        val margin = override?.travelBufferMinutes ?: settings.travelBufferMinutes
+        return leaveAtMillis + TimeUnit.MINUTES.toMillis(margin.coerceIn(0, 180).toLong())
     }
 
     private fun computeContingencyTimestamps(

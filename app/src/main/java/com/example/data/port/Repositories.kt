@@ -1,5 +1,6 @@
 package com.example.data.port
 
+import com.example.domain.rules.TrackedRoute
 import com.example.domain.model.Activity
 import com.example.domain.model.ActivityDraft
 import com.example.domain.model.ActivityFinancialRecord
@@ -126,6 +127,10 @@ interface DepartureAlarmPort {
     fun canScheduleExactAlarms(): Boolean
     suspend fun saveCachedRouteForActivity(activityId: String, route: CachedActivityRoute)
     suspend fun saveActivityTimingOverride(activityId: String, override: ActivityTimelineOverride?) {}
+    fun observeTrackedRoutes(): Flow<Map<String, TrackedRoute>> =
+        kotlinx.coroutines.flow.flowOf(emptyMap())
+    suspend fun saveTrackedRoute(venueKey: String, route: TrackedRoute?) {}
+    suspend fun clearTrackedRoutes() {}
     suspend fun setContingencyUnderControl(activityId: String, underControl: Boolean) {}
     suspend fun syncUpcomingActivities(
         activities: List<Activity>,

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.domain.rules.effectiveDriveMinutes
+import com.example.ui.components.withLatestLeave
 import com.example.ui.components.routeSummaryText
 import com.example.ui.components.RouteWarnings
 import androidx.compose.foundation.BorderStroke
@@ -1094,22 +1096,25 @@ private fun UpcomingActivityCard(
                                 modifier = Modifier.size(15.dp),
                             )
                             Text(
-                                text = if (scheduledDeparture.isChained) {
-                                    stringResource(
-                                        R.string.route_leave_from_venue,
-                                        scheduledDeparture.originVenueName.orEmpty(),
-                                        DominicanFormatter.formatTime12h(leaveTime),
-                                    )
-                                } else {
-                                    stringResource(
-                                        R.string.departure_leave_and_prepare,
-                                        DominicanFormatter.formatTime12h(prepareTime),
-                                        DominicanFormatter.formatTime12h(leaveTime),
-                                    )
-                                },
+                                text = withLatestLeave(
+                                    if (scheduledDeparture.isChained) {
+                                        stringResource(
+                                            R.string.route_leave_from_venue,
+                                            scheduledDeparture.originVenueName.orEmpty(),
+                                            DominicanFormatter.formatTime12h(leaveTime),
+                                        )
+                                    } else {
+                                        stringResource(
+                                            R.string.departure_leave_and_prepare,
+                                            DominicanFormatter.formatTime12h(prepareTime),
+                                            DominicanFormatter.formatTime12h(leaveTime),
+                                        )
+                                    },
+                                    scheduledDeparture.latestLeaveAtEpochMillis,
+                                ),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = colors.accentHover,
-                                maxLines = 1,
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -1121,6 +1126,7 @@ private fun UpcomingActivityCard(
                                 travelMinutes = scheduledDeparture.travelMinutes,
                                 originKind = scheduledDeparture.originKind,
                                 originVenueName = scheduledDeparture.originVenueName,
+                                isTrackedDrive = scheduledDeparture.isTrackedDrive,
                             )
                         } else {
                             stringResource(R.string.departure_no_coords_note)
@@ -1142,9 +1148,10 @@ private fun UpcomingActivityCard(
                 Text(
                     text = routeSummaryText(
                         distanceKm = cachedRoute.distanceKm,
-                        travelMinutes = cachedRoute.travelMinutes,
+                        travelMinutes = cachedRoute.effectiveDriveMinutes,
                         originKind = cachedRoute.originKind,
                         originVenueName = cachedRoute.originVenueName,
+                        isTrackedDrive = cachedRoute.trackedDriveMinutes != null,
                     ),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.muted,

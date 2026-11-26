@@ -1,5 +1,6 @@
 package com.example.data.local
 
+import com.example.domain.rules.TrackedRoute
 import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.flow.onStart
 import android.content.Context
@@ -444,6 +445,8 @@ class SessionDataStore(
                     item.originLongitude?.let { put("originLongitude", it) }
                     put("shortfallMinutes", item.shortfallMinutes)
                     item.unpinnedPreviousVenueName?.let { put("unpinnedPreviousVenueName", it) }
+                    put("isTrackedDrive", item.isTrackedDrive)
+                    item.latestLeaveAtEpochMillis?.let { put("latestLeaveAtEpochMillis", it) }
                 }
             )
         }
@@ -477,6 +480,10 @@ class SessionDataStore(
                     item.originVenueName?.let { put("originVenueName", it) }
                     put("shortfallMinutes", item.shortfallMinutes)
                     item.unpinnedPreviousVenueName?.let { put("unpinnedPreviousVenueName", it) }
+                    item.trackedDriveMinutes?.let { put("trackedDriveMinutes", it) }
+                    item.trackedWalkMinutes?.let { put("trackedWalkMinutes", it) }
+                    item.trackedSetupMinutes?.let { put("trackedSetupMinutes", it) }
+                    item.trackedMarginMinutes?.let { put("trackedMarginMinutes", it) }
                 }
             )
         }
@@ -656,11 +663,75 @@ class SessionDataStore(
                     originLongitude = obj.optDouble("originLongitude", Double.NaN).takeIf { !it.isNaN() },
                     shortfallMinutes = obj.optInt("shortfallMinutes", 0),
                     unpinnedPreviousVenueName = obj.optTextOrNull("unpinnedPreviousVenueName"),
+                    isTrackedDrive = obj.optBoolean("isTrackedDrive", false),
+                    latestLeaveAtEpochMillis = obj.optLong("latestLeaveAtEpochMillis", -1L).takeIf { it > 0L },
                 )
             }
             map
         }.getOrDefault(emptyMap())
     }
+
+    private fun trackedRoutesName(userId: String) = stringPreferencesKey("tracked_routes_json_$userId")
+
+    /** Routes the artist measured. They belong to the account and survive signing out. */
+    fun observeTrackedRoutes(): Flow<Map<String, TrackedRoute>> =
+        context.apptividadesDataStore.data.map { prefs ->
+            val userId = prefs[Keys.USER_ID]
+            parseTrackedRoutes(userId?.let { prefs[trackedRoutesName(it)] })
+        }
+
+    suspend fun loadTrackedRoutes(): Map<String, TrackedRoute> = observeTrackedRoutes().first()
+
+    /** A null [route] removes the saved route of [venueKey]. */
+    suspend fun saveTrackedRoute(venueKey: String, route: TrackedRoute?) {
+        context.apptividadesDataStore.edit { prefs ->
+            val userId = prefs[Keys.USER_ID] ?: return@edit
+            val routes = parseTrackedRoutes(prefs[trackedRoutesName(userId)]).toMutableMap()
+            if (route == null) routes.remove(venueKey) else routes[venueKey] = route
+            val arr = JSONArray()
+            routes.values.forEach { item ->
+                val drives = JSONObject()
+                item.driveMinutesByOrigin.forEach { (origin, minutes) -> drives.put(origin, minutes) }
+                arr.put(
+                    JSONObject()
+                        .put("venueKey", item.venueKey)
+                        .put("walkMinutes", item.walkMinutes)
+                        .put("setupMinutes", item.setupMinutes)
+                        .put("marginMinutes", item.marginMinutes)
+                        .put("drives", drives)
+                )
+            }
+            prefs[trackedRoutesName(userId)] = arr.toString()
+        }
+    }
+
+    suspend fun clearTrackedRoutes() {
+        context.apptividadesDataStore.edit { prefs ->
+            prefs[Keys.USER_ID]?.let { prefs.remove(trackedRoutesName(it)) }
+        }
+    }
+
+    private fun parseTrackedRoutes(raw: String?): Map<String, TrackedRoute> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return runCatching {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).associate { index ->
+                val obj = arr.getJSONObject(index)
+                val drives = obj.getJSONObject("drives")
+                val venueKey = obj.getString("venueKey")
+                venueKey to TrackedRoute(
+                    venueKey = venueKey,
+                    walkMinutes = obj.getInt("walkMinutes"),
+                    setupMinutes = obj.getInt("setupMinutes"),
+                    marginMinutes = obj.getInt("marginMinutes"),
+                    driveMinutesByOrigin = drives.keys().asSequence().associateWith { drives.getInt(it) },
+                )
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun JSONObject.optMinutesOrNull(key: String): Int? =
+        if (has(key) && !isNull(key)) getInt(key) else null
 
     private fun JSONObject.optTextOrNull(key: String): String? =
         optString(key).takeIf { it.isNotBlank() }
@@ -692,6 +763,10 @@ class SessionDataStore(
                     originVenueName = obj.optTextOrNull("originVenueName"),
                     shortfallMinutes = obj.optInt("shortfallMinutes", 0),
                     unpinnedPreviousVenueName = obj.optTextOrNull("unpinnedPreviousVenueName"),
+                    trackedDriveMinutes = obj.optMinutesOrNull("trackedDriveMinutes"),
+                    trackedWalkMinutes = obj.optMinutesOrNull("trackedWalkMinutes"),
+                    trackedSetupMinutes = obj.optMinutesOrNull("trackedSetupMinutes"),
+                    trackedMarginMinutes = obj.optMinutesOrNull("trackedMarginMinutes"),
                 )
             }
             map

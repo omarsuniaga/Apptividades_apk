@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.withLatestLeave
 import com.example.ui.components.RouteWarnings
 import com.example.ui.components.routeSummaryText
 import androidx.compose.foundation.BorderStroke
@@ -333,6 +334,7 @@ fun AlertsAndDeparturesSheet(
                                         travelMinutes = dep.travelMinutes,
                                         originKind = dep.originKind,
                                         originVenueName = dep.originVenueName,
+                                        isTrackedDrive = dep.isTrackedDrive,
                                     )
                                 } else {
                                     stringResource(R.string.departure_no_coords_note)
@@ -359,19 +361,22 @@ fun AlertsAndDeparturesSheet(
                                         modifier = Modifier.size(16.dp),
                                     )
                                     Text(
-                                        text = if (dep.isChained) {
-                                            stringResource(
-                                                R.string.route_leave_from_venue,
-                                                dep.originVenueName.orEmpty(),
-                                                DominicanFormatter.formatTime12h(leaveTime),
-                                            )
-                                        } else {
-                                            stringResource(
-                                                R.string.departure_leave_and_prepare,
-                                                DominicanFormatter.formatTime12h(prepareTime),
-                                                DominicanFormatter.formatTime12h(leaveTime),
-                                            )
-                                        },
+                                        text = withLatestLeave(
+                                            if (dep.isChained) {
+                                                stringResource(
+                                                    R.string.route_leave_from_venue,
+                                                    dep.originVenueName.orEmpty(),
+                                                    DominicanFormatter.formatTime12h(leaveTime),
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.departure_leave_and_prepare,
+                                                    DominicanFormatter.formatTime12h(prepareTime),
+                                                    DominicanFormatter.formatTime12h(leaveTime),
+                                                )
+                                            },
+                                            dep.latestLeaveAtEpochMillis,
+                                        ),
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                         color = colors.ink,
                                     )
